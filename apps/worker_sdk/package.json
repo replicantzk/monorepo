@@ -1,0 +1,20 @@
+{
+  "name": "worker_sdk",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "rimraf dist && tsc -d",
+    "format": "prettier --write ./src/"
+  },
+  "dependencies": {
+    "phoenix": "^1.7.12",
+    "zod": "^3.23.8",
+    "js-sha256": "^0.11.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "rimraf": "^5.0.7",
+    "prettier": "^3.2.5"
+  }
+}

@@ -1,0 +1,100 @@
+name: worker_app_release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+env: 
+  NODE_VERSION: ${{ vars.NODE_VERSION }}
+  TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+
+jobs:
+  release:
+    defaults:
+      run:
+        working-directory: apps/worker_app
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    strategy:
+      fail-fast: false
+      matrix:
+        settings:
+          - platform: 'macos-latest' # for Arm based macs (M1 and above).
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-latest' # for Intel based macs.
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-20.04'
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
+
+    runs-on: ${{ matrix.settings.platform }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: install dependencies (ubuntu only)
+        if: matrix.settings.platform == 'ubuntu-20.04' # This must match the platform value defined above.
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+        # webkitgtk 4.0 is for Tauri v1 - webkitgtk 4.1 is for Tauri v2.
+        # You can remove the one that doesn't apply to your app to speed up the workflow a bit.
+
+      - name: Setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: lts/*
+          # cache: 'npm' # Set this to npm, yarn or pnpm.
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          # Those targets are only used on macos runners so it's in an `if` to slightly speed up windows and linux builds.
+          targets: ${{ matrix.settings.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+
+      - name: Sync node version and setup cache
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install sdk dependencies
+        run: npm install
+        working-directory: apps/worker_sdk
+
+      - name: Build JS sdk
+        run: npm run build
+        working-directory: apps/worker_sdk
+
+      - name: Install frontend dependencies
+        run: npm install
+
+      - name: Build the app
+        uses: tauri-apps/tauri-action@dev
+        env:
+          GITHUB_TOKEN: ${{ secrets.TOKEN_GH }}
+        with:
+          tagName: ${{ github.ref_name }}
+          releaseName: 'Replicant Worker v__VERSION__'
+          includeRelease: true
+          includeUpdaterJson: true
+          args: ${{ matrix.settings.args }}
+
+      # Switch to using releases
+      # - name: Upload to S3
+      #   uses: shallwefootball/s3-upload-action@master
+      #   with:
+      #     aws_bucket: ${{ secrets.AWS_BUCKET }}
+      #     aws_key_id: ${{ secrets.AWS_KEY_ID }}
+      #     aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
+      #     source_dir: apps/worker_app/src-tauri/target/release/bundle
+      #     destination_dir: ${{ github.ref_name }}/${{ matrix.settings.platform }}

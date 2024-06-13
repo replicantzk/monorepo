@@ -1,0 +1,61 @@
+services:
+  platform_db:
+    image: ankane/pgvector
+    container_name: db_replicant_platform_compose
+    ports:
+      - "${PLATFORM_DB_PORT}:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: replicant_platform_dev
+      PGSSLMODE: allow
+    volumes:
+      - ./apps/platform/.db/data:/var/lib/postgresql/data
+    restart: unless-stopped
+    
+  platform_mq:
+    image: rabbitmq:3.12.12-management
+    env_file:
+      - path: ./.env
+    ports:
+      - "${PLATFORM_AMQP_PORT}:5672"
+      - 15672:15672
+    restart: unless-stopped
+
+  platform:
+    build:
+      context: ./apps/platform
+      dockerfile: ./Dockerfile
+      target: "dev"
+    command: /bin/bash -c "mix ecto.migrate && mix phx.server"
+    env_file:
+      - path: ./.env
+    network_mode: "host"
+    depends_on:
+      - platform_db
+      - platform_mq
+    restart: unless-stopped
+
+  worker_cli:
+    build:
+      context: ./apps/worker_cli
+      dockerfile: ./Dockerfile
+    volumes:
+      - ./apps/worker_cli/.models:/app/.models
+    env_file:
+      - path: ./.env
+    depends_on:
+      - platform
+    restart: unless-stopped
+
+  chat:
+    build:
+      context: ./vendor/chat
+      dockerfile: ./Dockerfile
+    env_file:
+      - path: ./.env
+    network_mode: "host"
+    depends_on:
+      - platform
+      - worker_cli
+    restart: unless-stopped

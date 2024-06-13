@@ -1,0 +1,19 @@
+# fly.toml app configuration file generated for replicant-worker-test on 2024-04-03T17:05:50-04:00
+#
+# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
+#
+
+app = 'replicant-worker-test'
+primary_region = 'ord'
+
+[env]
+  WORKER_MODEL="llama3:8b-instruct-q4_K_M"
+  WORKER_URL_SERVER="wss://demo.mvk.vc"
+
+[build]
+  dockerfile = './Dockerfile'
+
+[[vm]]
+  memory = '8gb'
+  cpu_kind = 'shared'
+  cpus = 8

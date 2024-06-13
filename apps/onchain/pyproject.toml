@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "contracts"
+version = "0.1.0"
+description = ""
+authors = []
+readme = "README.md"
+package-mode = false
+
+[tool.poetry.dependencies]
+python = "^3.10"
+vyper = "0.4.0rc6"
+snekmate = "0.1.0rc1"
+eth-ape = "^0.8.3"
+# ape-vyper not installing with vyper rc
+ape-solidity = "^0.8.1"
+ape-arbitrum = "^0.8.0"
+titanoboa = "^0.1.9"
+pytest = "^8.2.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

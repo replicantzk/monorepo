@@ -1,0 +1,21 @@
+{
+    "index": {
+        "title": "Home",
+        "type": "page",
+        "theme": {
+          "breadcrumb": false,
+          "footer": false,
+          "sidebar": false,
+          "toc": false,
+          "pagination": false
+        }
+    },
+    "about": {
+        "title": "About",
+        "type": "page"
+    },
+    "docs": {
+        "title": "Docs",
+        "type": "page"
+    }
+}

@@ -1,0 +1,18 @@
+import Head from "next/head";
+import "../styles/global.css";
+
+export const meta = {
+  title: "Replicant Network",
+  description: "Open-source decentralized AI inference network.",
+};
+
+export default function App({ Component, pageProps }) {
+  return (
+    <>
+      <Head>
+        <link rel="shortcut icon" href="/favicon.ico" />
+      </Head>
+      <Component {...pageProps} />
+    </>
+  );
+}

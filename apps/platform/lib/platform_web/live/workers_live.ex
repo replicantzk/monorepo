@@ -1,0 +1,102 @@
+defmodule PlatformWeb.WorkersLive do
+  use PlatformWeb, :live_view
+  alias Platform.Model
+  alias Platform.WorkerBalancer
+  alias Platform.WorkerBalancerCluster
+
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <div class="flex flex-col space-y-2">
+      <h1 class="text-2xl font-semibold">Workers</h1>
+      <%= for model <- Model.supported_models_keys() do %>
+        <% workers = Map.get(@workers_by_model, model) %>
+        <div class="node-group mb-4">
+          <h3 class="text-lg font-bold mb-2"><%= model %></h3>
+          <%= if workers do %>
+            <div class="flex flex-wrap">
+              <%= for {id, status, node} <- workers do %>
+                <div
+                  class={"w-8 h-8 bg-gray-300 aspect-w-1 aspect-h-1 " <> "#{status_color(status)} mr-2 mb-2"}
+                  title={"id: #{id}, status: #{status}, node: #{node}"}
+                >
+                </div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+    """
+  end
+
+  defp status_color(:join), do: "bg-yellow-500"
+  defp status_color(:lock), do: "bg-red-500"
+  defp status_color(:free), do: "bg-green-500"
+
+  @impl true
+  def mount(_params, _session, socket) do
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Platform.PubSub, WorkerBalancer.pubsub_topic())
+      :net_kernel.monitor_nodes(true)
+    end
+
+    workers_ets = :ets.tab2list(WorkerBalancerCluster.table_name())
+
+    workers =
+      Enum.reduce(workers_ets, %{}, fn {id, model, status, node}, acc ->
+        Map.update(acc, node, [{id, model, status}], fn models ->
+          [{id, model, status}] ++ models
+        end)
+      end)
+
+    workers_by_model =
+      Enum.reduce(workers_ets, %{}, fn {id, model, status, node}, acc ->
+        Map.update(acc, model, [{id, status, node}], fn models ->
+          [{id, status, node}] ++ models
+        end)
+      end)
+
+    {:ok,
+     socket
+     |> assign(workers: workers)
+     |> assign(workers_by_model: workers_by_model)}
+  end
+
+  @impl true
+  def handle_info({:nodeup, _node}, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_info({:nodedown, node}, socket) do
+    {:noreply,
+     assign(socket,
+       workers: Map.delete(socket.assigns.workers, node)
+     )}
+  end
+
+  @impl true
+  def handle_info({:agg, workers, node}, socket) do
+    new_workers =
+      Map.put(
+        socket.assigns.workers,
+        node,
+        workers
+      )
+
+    workers_by_model =
+      Enum.reduce(new_workers, %{}, fn {node, worker_list}, acc ->
+        Enum.reduce(worker_list, acc, fn {id, model, status}, acc ->
+          Map.update(acc, model, [{id, status, node}], fn models ->
+            [{id, status, node}] ++ models
+          end)
+        end)
+      end)
+
+    {:noreply,
+     socket
+     |> assign(workers: new_workers)
+     |> assign(workers_by_model: workers_by_model)}
+  end
+end

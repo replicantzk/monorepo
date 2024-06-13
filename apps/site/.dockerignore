@@ -1,0 +1,8 @@
+dist/
+.next/
+.turbo/
+node_modules/
+.dockerignore
+.env
+Dockerfile
+fly.toml

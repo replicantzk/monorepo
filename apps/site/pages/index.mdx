@@ -1,0 +1,39 @@
+import Link from "next/link";
+import DownloadButton from "../components/DownloadButton";
+import { baseURL, releaseFiles } from "../utils/versions";
+
+<div
+  className="flex flex-col justify-center items-center mt-16 space-y-4"
+>
+  <h1 className="text-4xl font-bold text-center">Replicant Network</h1>
+  <p className="text-2xl italic text-center">Own your intelligence.</p>
+  <p className="text-lg text-center">Open-source decentralized AI inference network.</p>
+  <p className="text-lg text-center">Explore the network:</p>
+  <div className="flex flex-wrap justify-center items-center">
+    <Link href="/about/tldr" className="btn btn-primary m-2">
+      TLDR
+    </Link>
+    <Link
+      target="_blank"
+      href="https://platform.replicantzk.com"
+      className="btn btn-primary m-2"
+    >
+      Home
+    </Link>
+    <Link
+      target="_blank"
+      href="https://huggingface.co/spaces/mvkvc/replicant_chat"
+      className="btn btn-primary m-2"
+    >
+      Chat
+    </Link>
+  </div>
+  <p className="text-lg text-center">Download the worker app:</p>
+  <div className="flex flex-wrap justify-center items-center">
+    {Object.keys(releaseFiles).map((name) => (
+      <DownloadButton name={name} href={`${baseURL}/${releaseFiles[name]}`} forward={"/docs/quickstart/worker"} />
+    ))}
+    <DownloadButton name={`Docker`} href={'https://github.com/orgs/replicantzk/packages/container/package/worker-cli'} />
+  </div>
+</div>
+

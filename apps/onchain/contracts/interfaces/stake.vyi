@@ -1,0 +1,13 @@
+
+# External Interfaces
+interface Stake:
+    def setCanLock(canLock: address): nonpayable
+    def setCanSlash(canSlash: address): nonpayable
+    def setStakeDuration(duration: uint256): nonpayable
+    def getStakeAmount(staker: address) -> uint256: nonpayable
+    def stake_(amount: uint256): nonpayable
+    def unstake(amount: uint256): nonpayable
+    def lock(staker: address): nonpayable
+    def slash(staker: address, amount: uint256, reward: address[8]): nonpayable
+    def REWARD_SIZE() -> uint256: view
+

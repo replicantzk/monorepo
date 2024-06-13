@@ -1,0 +1,110 @@
+name: platform_test
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - .github/workflows/platform_testy.yaml
+      - apps/platform/**
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/platform_test.yaml
+      - apps/platform/**
+
+env:
+  ELIXIR_VERSION: ${{ vars.ELIXIR_VERSION }}
+  OTP_VERSION: ${{ vars.OTP_VERSION }}
+  MIX_ENV: test
+  PLATFORM_AMQP_URL: amqp://guest:guest@localhost:5672
+  PLATFORM_DB_URL: ecto://postgres:postgres@localhost:5433/platform_test
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/platform
+    services:
+      db:
+        image: ankane/pgvector
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: platform_test
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      mq:
+        image: rabbitmq:3.12.12-management
+        env:
+          RABBITMQ_DEFAULT_USER: guest
+          RABBITMQ_DEFAULT_PASS: guest
+        ports:
+          - "5672:5672"
+    steps:
+      # Step: Setup Elixir + Erlang image as the base.
+      - uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+
+      # Step: Check out the code.
+      - uses: actions/checkout@v3
+
+        # Step: Define how to cache deps. Restores existing cache if present.
+      - uses: actions/cache@v3
+        id: cache-deps
+        env:
+          cache-name: cache-elixir-deps
+        with:
+          path: apps/platform/deps
+          key: ${{ runner.os }}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ env.cache-name }}-
+
+      # Step: Define how to cache the `_build` directory. After the first run,
+      # this speeds up tests runs a lot. This includes not re-compiling our
+      # project's downloaded deps every run.
+      - uses: actions/cache@v3
+        id: cache-build
+        env:
+          cache-name: cache-compiled-build
+        with:
+          path: apps/platform/_build
+          key: ${{ runner.os }}-mix-${{ env.cache-name }}-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-${{ env.cache-name }}-
+            ${{ runner.os }}-mix-
+
+      # Step: Conditionally bust the cache when job is re-run.
+      # Sometimes, we may have issues with incremental builds that are fixed by
+      # doing a full recompile. In order to not waste dev time on such trivial
+      # issues (while also reaping the time savings of incremental builds for
+      # *most* day-to-day development), force a full recompile only on builds
+      # that are retried.
+      - run: |
+          mix deps.clean --all
+          mix clean
+        shell: sh
+        if: github.run_attempt != '1'
+
+      # Step: Download project dependencies. If unchanged, uses
+      # the cached version.
+      - run: mix deps.get
+
+      # Step: Compile the project treating any warnings as errors.
+      # Customize this step if a different behavior is desired.
+      # TODO: Add --warnings-as-errors flag
+      - run: mix compile
+
+      # Step: Execute the tests.
+      - run: mix test

@@ -1,0 +1,42 @@
+{
+  "name": "worker_app",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "clean:sdk": "cd ../worker_sdk && npm run build",
+    "clean:deps": "rimraf ./node_modules/worker_sdk && npm install",
+    "clean": "npm run clean:sdk && npm run clean:deps",
+    "dev:vite": "npm run clean && vite",
+    "dev": "pkill node || true && tauri dev",
+    "build:vite": "npm run clean && tsc && vite build",
+    "build": "tauri build",
+    "build:debug": "tauri build --debug",
+    "tauri": "tauri",
+    "format": "prettier --write ./src"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^1",
+    "immer": "^10.0.4",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-error-boundary": "^4.0.13",
+    "react-router-dom": "^6.23.0",
+    "worker_sdk": "file:../worker_sdk",
+    "zustand": "^4.5.2"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^1",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.19",
+    "daisyui": "^4.10.2",
+    "postcss": "^8.4.38",
+    "prettier": "^3.2.5",
+    "rimraf": "^5.0.7",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.0.2",
+    "vite": "^5.0.0"
+  }
+}

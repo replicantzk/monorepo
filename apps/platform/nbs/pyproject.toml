@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "nbs"
+version = "0.1.0"
+description = ""
+authors = []
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "~3.10"
+jupyterlab = "^4.1.5"
+openai = "^1.14.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
