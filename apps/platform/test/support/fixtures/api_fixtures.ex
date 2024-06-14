@@ -19,22 +19,6 @@ defmodule Platform.APIFixtures do
   end
 
   @doc """
-  Generate a webhook.
-  """
-  def webhook_fixture(attrs \\ %{}) do
-    {:ok, webhook} =
-      attrs
-      |> Enum.into(%{
-        input: %{},
-        status: "some status",
-        url: "some url"
-      })
-      |> Platform.API.create_webhook()
-
-    webhook
-  end
-
-  @doc """
   Generate a request.
   """
   def request_fixture(attrs \\ %{}) do

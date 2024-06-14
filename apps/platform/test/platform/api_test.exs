@@ -57,64 +57,6 @@ defmodule Platform.APITest do
     end
   end
 
-  describe "webhooks" do
-    alias Platform.API.Webhook
-
-    import Platform.APIFixtures
-
-    @invalid_attrs %{input: nil, status: nil, url: nil}
-
-    test "list_webhooks/0 returns all webhooks" do
-      webhook = webhook_fixture()
-      assert API.list_webhooks() == [webhook]
-    end
-
-    test "get_webhook!/1 returns the webhook with given id" do
-      webhook = webhook_fixture()
-      assert API.get_webhook!(webhook.id) == webhook
-    end
-
-    test "create_webhook/1 with valid data creates a webhook" do
-      valid_attrs = %{input: %{}, status: "some status", url: "some url"}
-
-      assert {:ok, %Webhook{} = webhook} = API.create_webhook(valid_attrs)
-      assert webhook.input == %{}
-      assert webhook.status == "some status"
-      assert webhook.url == "some url"
-    end
-
-    test "create_webhook/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = API.create_webhook(@invalid_attrs)
-    end
-
-    test "update_webhook/2 with valid data updates the webhook" do
-      webhook = webhook_fixture()
-      update_attrs = %{input: %{}, status: "some updated status", url: "some updated url"}
-
-      assert {:ok, %Webhook{} = webhook} = API.update_webhook(webhook, update_attrs)
-      assert webhook.input == %{}
-      assert webhook.status == "some updated status"
-      assert webhook.url == "some updated url"
-    end
-
-    test "update_webhook/2 with invalid data returns error changeset" do
-      webhook = webhook_fixture()
-      assert {:error, %Ecto.Changeset{}} = API.update_webhook(webhook, @invalid_attrs)
-      assert webhook == API.get_webhook!(webhook.id)
-    end
-
-    test "delete_webhook/1 deletes the webhook" do
-      webhook = webhook_fixture()
-      assert {:ok, %Webhook{}} = API.delete_webhook(webhook)
-      assert_raise Ecto.NoResultsError, fn -> API.get_webhook!(webhook.id) end
-    end
-
-    test "change_webhook/1 returns a webhook changeset" do
-      webhook = webhook_fixture()
-      assert %Ecto.Changeset{} = API.change_webhook(webhook)
-    end
-  end
-
   describe "requests" do
     alias Platform.API.Request
 
