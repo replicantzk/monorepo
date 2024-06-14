@@ -32,13 +32,18 @@ Components labeled `(experimental)` are in development to enable permisionless p
 
 ### Tools
 
+These are all the tools used in development:
+
 - [docker](https://docs.docker.com/engine/install)
 - [docker compose](https://docs.docker.com/compose/install)
 - [mise](https://mise.jdx.dev/getting-started.html)
 - [asdf elixir](https://github.com/asdf-vm/asdf-elixir)
 - [poetry](https://python-poetry.org/docs/#installing-with-pipx)
 - [solc](https://docs.soliditylang.org/en/latest/installing-solidity.html#installing-the-solidity-compiler)
+- [k6](https://k6.io/docs/get-started/installation/)
 - [direnv](https://direnv.net/docs/installation.html)
+
+Depending on the component you are working on, you may only need a subset of these tools.
 
 ### Setup
 
@@ -51,9 +56,10 @@ Set up the apps by running:
 ```bash
 sudo apt-get install unzip
 mise plugin add elixir https://github.com/asdf-vm/asdf-elixir.git
-chmod +x ./sh/setup.sh
-./sh/setup.sh
 direnv allow
+chmod +x ./sh/*
+./sh/submodules.sh
+./sh/install.sh
 ```
 
 Each component may require it's own individual setup ex. setting up the database with `sh/db.sh` and `mix setup` before being using `sh/start.sh` to run the app in `./apps/platform`. 

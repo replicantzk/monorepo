@@ -12,8 +12,8 @@ defmodule PlatformWeb.WorkersLive do
       <%= for model <- Model.supported_models_keys() do %>
         <% workers = Map.get(@workers_by_model, model) %>
         <div class="node-group mb-4">
-          <h3 class="text-lg font-bold mb-2"><%= model %></h3>
           <%= if workers do %>
+            <h3 class="text-lg font-bold mb-2"><%= model %>(<%= length(workers) %>)</h3>
             <div class="flex flex-wrap">
               <%= for {id, status, node} <- workers do %>
                 <div
@@ -23,6 +23,8 @@ defmodule PlatformWeb.WorkersLive do
                 </div>
               <% end %>
             </div>
+          <% else %>
+            <h3 class="text-lg font-bold mb-2"><%= model %></h3>
           <% end %>
         </div>
       <% end %>
@@ -30,9 +32,9 @@ defmodule PlatformWeb.WorkersLive do
     """
   end
 
-  defp status_color(:join), do: "bg-yellow-500"
-  defp status_color(:lock), do: "bg-red-500"
-  defp status_color(:free), do: "bg-green-500"
+  defp status_color(:join), do: "bg-yellow-400"
+  defp status_color(:lock), do: "bg-orange-400"
+  defp status_color(:free), do: "bg-green-400"
 
   @impl true
   def mount(_params, _session, socket) do

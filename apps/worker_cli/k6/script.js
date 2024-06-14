@@ -4,8 +4,8 @@ import { sleep, check } from 'k6';
 const URL = `${__ENV.OPENAI_BASE_URL}/chat/completions`;
 const TOKEN = __ENV.OPENAI_API_KEY;
 const MODEL = __ENV.WORKER_MODEL;
+const VUS = __ENV.VUS || 1;
 const STREAM = true;
-const VUS = 5;
 
 export const options = {
   scenarios: {

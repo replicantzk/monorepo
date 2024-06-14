@@ -1,7 +1,5 @@
 #! /bin/sh
 
-git submodule update --init --recursive
-
 mise install
 
 mix do local.rebar --force, local.hex --force
