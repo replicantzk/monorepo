@@ -28,7 +28,7 @@ defmodule PlatformWeb.Plugs.TokenChecker do
       {:ok, user} ->
         {:commit, user}
 
-      nil ->
+      _ ->
         {:error, :not_found}
     end
   end

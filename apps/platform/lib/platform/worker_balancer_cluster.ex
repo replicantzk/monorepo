@@ -13,7 +13,7 @@ defmodule Platform.WorkerBalancerCluster do
   end
 
   def lock(id, node) do
-    case :rpc.call(id, node, WorkerBalancer, :lock, [id]) do
+    case :rpc.call(node, WorkerBalancer, :lock, [id]) do
       true -> true
       _ -> false
     end

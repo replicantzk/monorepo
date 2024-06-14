@@ -28,19 +28,23 @@ defmodule PlatformWeb.CompletionController do
       requester_id: conn.assigns.current_user.id
     }
 
+    time_start = :os.timestamp()
+
     with %Ecto.Changeset{valid?: true} <- Request.changeset(%Request{}, request_attrs),
          %Ecto.Changeset{valid?: true} <- ParamsCompletion.changeset(%ParamsCompletion{}, params),
          true <- check_context_size(request_attrs)
           do
-      request_handler(conn, request_attrs)
+      request_handler(conn, request_attrs, time_start)
     else
       %Ecto.Changeset{valid?: false} = changeset ->
         error_changeset(conn, changeset)
+
+      false ->
+        error(conn, nil, request_attrs, :context_size, time_start)
     end
   end
 
-  defp request_handler(conn, request_attrs) do
-    time_start = :os.timestamp()
+  defp request_handler(conn, request_attrs, time_start) do
 
     case AMQPPublisher.publish(request_attrs) do
       :ok ->

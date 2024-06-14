@@ -45,7 +45,6 @@ defmodule Platform.AMQPPublisher do
          ) do
       :ok -> :ok
       {:error, reason} -> {:error, reason}
-      _ -> {:error, :unknown}
     end
   end
 end
