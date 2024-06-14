@@ -88,13 +88,3 @@ jobs:
           includeRelease: true
           includeUpdaterJson: true
           args: ${{ matrix.settings.args }}
-
-      # Switch to using releases
-      # - name: Upload to S3
-      #   uses: shallwefootball/s3-upload-action@master
-      #   with:
-      #     aws_bucket: ${{ secrets.AWS_BUCKET }}
-      #     aws_key_id: ${{ secrets.AWS_KEY_ID }}
-      #     aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY}}
-      #     source_dir: apps/worker_app/src-tauri/target/release/bundle
-      #     destination_dir: ${{ github.ref_name }}/${{ matrix.settings.platform }}
