@@ -19,17 +19,14 @@ jobs:
     defaults:
       run:
         working-directory: apps/platform
-    env:
-      ELIXIR_VERSION: ${{ vars.ELIXIR_VERSION }}
-      OTP_VERSION: ${{ vars.OTP_VERSION }}
     steps:
       - uses: actions/checkout@v3
 
       - name: Setup elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: ${{ env.ELIXIR_VERSION }}
-          otp-version: ${{ env.OTP_VERSION }}
+          elixir-version: 1.16.2-otp-26
+          otp-version: 26.2.3
 
       - name: Retrieve Mix Dependencies Cache
         uses: actions/cache@v3

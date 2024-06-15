@@ -25,8 +25,6 @@ jobs:
       run:
         working-directory: apps/platform
     env:
-      OTP_VERSION: ${{ vars.OTP_VERSION }}
-      ELIXIR_VERSION: ${{ vars.ELIXIR_VERSION }}
       MIX_ENV: test
       PLATFORM_AMQP_URL: amqp://guest:guest@localhost:5672
       PLATFORM_DB_URL: ecto://postgres:postgres@localhost:5433/platform_test
@@ -55,8 +53,8 @@ jobs:
       # Step: Setup Elixir + Erlang image as the base.
       - uses: erlef/setup-beam@v1
         with:
-          otp-version: ${{ env.OTP_VERSION }}
-          elixir-version: ${{ env.ELIXIR_VERSION }}
+          elixir-version: 1.16.2-otp-26
+          otp-version: 26.2.3
 
       # Step: Check out the code.
       - uses: actions/checkout@v3
