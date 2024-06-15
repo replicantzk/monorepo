@@ -13,12 +13,7 @@ on:
       - .github/workflows/platform_test.yaml
       - apps/platform/**
 
-env:
-  ELIXIR_VERSION: ${{ vars.ELIXIR_VERSION }}
-  OTP_VERSION: ${{ vars.OTP_VERSION }}
-  MIX_ENV: test
-  PLATFORM_AMQP_URL: amqp://guest:guest@localhost:5672
-  PLATFORM_DB_URL: ecto://postgres:postgres@localhost:5433/platform_test
+
 
 permissions:
   contents: read
@@ -29,6 +24,12 @@ jobs:
     defaults:
       run:
         working-directory: apps/platform
+    env:
+      OTP_VERSION: ${{ vars.OTP_VERSION }}
+      ELIXIR_VERSION: ${{ vars.ELIXIR_VERSION }}
+      MIX_ENV: test
+      PLATFORM_AMQP_URL: amqp://guest:guest@localhost:5672
+      PLATFORM_DB_URL: ecto://postgres:postgres@localhost:5433/platform_test
     services:
       db:
         image: ankane/pgvector

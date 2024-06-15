@@ -13,16 +13,15 @@ on:
       - .github/workflows/platform_lint.yaml
       - apps/platform/**
 
-env:
-  ELIXIR_VERSION: ${{ vars.ELIXIR_VERSION }}
-  OTP_VERSION: ${{ vars.OTP_VERSION }}
-
 jobs:
   lint:
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: apps/platform
+    env:
+      ELIXIR_VERSION: ${{ vars.ELIXIR_VERSION }}
+      OTP_VERSION: ${{ vars.OTP_VERSION }}
     steps:
       - uses: actions/checkout@v3
 
