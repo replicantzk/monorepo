@@ -12,9 +12,10 @@ defmodule Platform.API.Request do
     field :type, Ecto.Enum, values: [:completion]
     field :params, :map
     field :response, :string
-    field :latency, :integer
     field :tokens, :integer
     field :reward, :integer
+    field :time_start, :utc_datetime
+    field :time_end, :utc_datetime
 
     belongs_to :requester, User
     has_one :worker, User
@@ -32,12 +33,13 @@ defmodule Platform.API.Request do
       :status,
       :params,
       :response,
-      :latency,
       :tokens,
-      :reward
+      :reward,
+      :time_start,
+      :time_end
     ])
     |> cast_assoc(:worker)
     |> cast_assoc(:transaction)
-    |> validate_required([:id, :params, :requester_id])
+    |> validate_required([:id, :params, :requester_id, :time_start])
   end
 end

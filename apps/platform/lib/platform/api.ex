@@ -244,30 +244,30 @@ defmodule Platform.API do
     Transaction.changeset(transaction, attrs)
   end
 
-  def get_credits_balance(user) do
+  def get_credits_balance(user_id) do
     debits =
       Repo.one(
         from t in Transaction,
-          where: t.to == ^user.id,
+          where: t.to == ^user_id,
           select: sum(t.amount)
       ) || 0
 
     credits =
       Repo.one(
         from t in Transaction,
-          where: t.from == ^user.id,
+          where: t.from == ^user_id,
           select: sum(t.amount)
       ) || 0
 
     debits - credits
   end
 
-  def get_transactions(user, opts \\ []) do
+  def get_transactions(user_id, opts \\ []) do
     limit = Keyword.get(opts, :limit)
 
     query =
       from t in Transaction,
-        where: t.from == ^user.id or t.to == ^user.id,
+        where: t.from == ^user_id or t.to == ^user_id,
         order_by: [desc: t.inserted_at]
 
     query = if limit, do: limit(query, ^limit), else: query
@@ -276,10 +276,12 @@ defmodule Platform.API do
   end
 
   def create_system_credit_account() do
-    Accounts.register_user(%{
+    user_attrs = %{
       email: Application.fetch_env!(:platform, :credits_system_email),
       password: Ecto.UUID.generate()
-    })
+    }
+
+    Accounts.register_user(user_attrs)
   end
 
   def get_system_credit_account() do
@@ -291,26 +293,26 @@ defmodule Platform.API do
     end
   end
 
-  def transfer_credits(amount, user_to, user_from) do
+  def transfer_credits(amount, user_to_id, user_from_id) do
     transaction_attrs = %{
-      from: user_from.id,
-      to: user_to.id,
+      from: user_from_id,
+      to: user_to_id,
       amount: amount
     }
 
-    if get_credits_balance(user_from) < amount do
+    if get_credits_balance(user_from_id) < amount do
       {:error, :insufficient_funds}
     else
       create_transaction(transaction_attrs)
     end
   end
 
-  def transfer_credits(amount, user_to) do
+  def transfer_credits(amount, user_to_id) do
     {:ok, user_from} = get_system_credit_account()
 
     transaction_attrs = %{
       from: user_from.id,
-      to: user_to.id,
+      to: user_to_id,
       amount: amount
     }
 
