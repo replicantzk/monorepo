@@ -6,18 +6,19 @@ defmodule Platform.API.Request do
 
   @derive {Jason.Encoder, only: [:id, :params]}
 
-  @primary_key {:id, :string, autogenerate: false}
+  @primary_key {:id, :binary_id, autogenerate: true}
   schema "requests" do
     field :status, :string
     field :type, Ecto.Enum, values: [:completion]
     field :params, :map
     field :response, :string
-    field :latency, :integer
     field :tokens, :integer
     field :reward, :integer
+    field :time_start, :utc_datetime
+    field :time_end, :utc_datetime
 
-    belongs_to :requester, User
-    has_one :worker, User
+    belongs_to :requester, User, foreign_key: :requester_id
+    belongs_to :worker, User, foreign_key: :worker_id
     has_one :transaction, Transaction
 
     timestamps(type: :utc_datetime)
@@ -27,17 +28,18 @@ defmodule Platform.API.Request do
   def changeset(request, attrs) do
     request
     |> cast(attrs, [
-      :id,
-      :requester_id,
       :status,
       :params,
       :response,
-      :latency,
       :tokens,
-      :reward
+      :reward,
+      :time_start,
+      :time_end,
+      :requester_id
     ])
+    |> cast_assoc(:requester)
     |> cast_assoc(:worker)
     |> cast_assoc(:transaction)
-    |> validate_required([:id, :params, :requester_id])
+    |> validate_required([:params, :requester_id, :time_start])
   end
 end

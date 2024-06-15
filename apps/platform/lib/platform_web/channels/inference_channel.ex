@@ -3,7 +3,6 @@ defmodule PlatformWeb.InferenceChannel do
   require Logger
   alias Phoenix.PubSub
   alias Platform.API
-  alias Platform.ChannelMonitor
   alias Platform.ConnectionLimiter
   alias Platform.WorkerBalancer
 
@@ -18,7 +17,6 @@ defmodule PlatformWeb.InferenceChannel do
     ip = RemoteIp.from(socket.assigns.x_headers)
 
     with {:ok, user} <- authorized?(ip, worker_id, payload),
-         :ok <- ChannelMonitor.monitor(:worker, self(), {__MODULE__, :leave, [worker_id]}),
          true <- WorkerBalancer.join(worker_id, model) do
       {:ok,
        socket
@@ -44,15 +42,11 @@ defmodule PlatformWeb.InferenceChannel do
        ) do
     with true <- ConnectionLimiter.check({ip, key}),
          {:ok, user} <- API.get_user_by_token(key),
-         generated_worker_id <- generate_worker_id(key, salt),
-         true <- worker_id == generated_worker_id do
+         true <- worker_id == generate_worker_id(key, salt) do
       {:ok, user}
     else
-      {:error, reason} ->
-        {:error, reason}
-
       _ ->
-        {:error, :unknown}
+        {:error, :unauthorized}
     end
   end
 

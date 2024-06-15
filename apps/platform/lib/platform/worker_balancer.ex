@@ -98,21 +98,14 @@ defmodule Platform.WorkerBalancer do
     :ok
   end
 
-  def handle_info(:agg, state) do
+  def handle_info(:agg, _state) do
     workers = :ets.tab2list(@table_name)
 
-    new_state =
-      if workers != state do
-        PubSub.broadcast(
-          Platform.PubSub,
-          pubsub_topic(),
-          {:agg, workers, Node.self()}
-        )
-
-        workers
-      else
-        state
-      end
+    PubSub.broadcast(
+      Platform.PubSub,
+      pubsub_topic(),
+      {:agg, workers, Node.self()}
+    )
 
     Process.send_after(
       self(),
@@ -120,6 +113,6 @@ defmodule Platform.WorkerBalancer do
       Application.fetch_env!(:platform, :worker_agg_interval)
     )
 
-    {:noreply, new_state}
+    {:noreply, workers}
   end
 end

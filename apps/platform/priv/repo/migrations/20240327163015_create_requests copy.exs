@@ -3,7 +3,7 @@ defmodule Platform.Repo.Migrations.CreateRequests do
 
   def change do
     create table(:requests, primary_key: false) do
-      add :id, :string, primary_key: true
+      add :id, :uuid, primary_key: true
       add :params, :map
       add :status, :string
       add :response, :text

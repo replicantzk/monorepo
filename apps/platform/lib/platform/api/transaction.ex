@@ -1,11 +1,14 @@
 defmodule Platform.API.Transaction do
   use Ecto.Schema
   import Ecto.Changeset
+  alias Platform.API.Request
 
   schema "transactions" do
     field :from, :integer
     field :to, :integer
     field :amount, :integer
+
+    belongs_to :request, Request
 
     timestamps(type: :utc_datetime)
   end

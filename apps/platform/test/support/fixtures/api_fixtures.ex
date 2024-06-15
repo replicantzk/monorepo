@@ -26,10 +26,10 @@ defmodule Platform.APIFixtures do
     {:ok, request} =
       attrs
       |> Enum.into(%{
-        id: "some id",
         params: %{},
         response: "some response",
-        status: "some status"
+        status: "some status",
+        time_start: DateTime.utc_now()
       })
       |> Platform.API.create_request()
 

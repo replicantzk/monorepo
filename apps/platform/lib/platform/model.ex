@@ -4,7 +4,7 @@ defmodule Platform.Model do
   def supported_models do
     [
       %{name: "llama3:8b-instruct-q4_K_M", size: 4.9, context: 8192},
-      %{name: "phind-codellama:34b-v2-q4_K_M", size: 20, context: 16384}
+      %{name: "phind-codellama:34b-v2-q4_K_M", size: 20, context: 16_384}
     ]
   end
 
