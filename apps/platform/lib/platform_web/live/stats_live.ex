@@ -53,7 +53,7 @@ defmodule PlatformWeb.StatsLive do
       r in Request,
       where: r.inserted_at >= ago(^days, "day"),
       group_by: [fragment("date_trunc('day', ?)", r.inserted_at)],
-      select: %{day: fragment("date_trunc('day', ?)", r.inserted_at), count: count(r.uuid)}
+      select: %{day: fragment("date_trunc('day', ?)", r.inserted_at), count: count(r.id)}
     )
     |> Repo.all()
     |> Enum.map(fn %{day: day, count: count} ->

@@ -31,7 +31,6 @@ defmodule Platform.APIFixtures do
         status: "some status",
         time_start: DateTime.utc_now()
       })
-      |> IO.inspect(label: "REQUEST FIXTURE")
       |> Platform.API.create_request()
 
     request
