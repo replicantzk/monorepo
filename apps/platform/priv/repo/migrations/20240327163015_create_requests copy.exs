@@ -7,9 +7,10 @@ defmodule Platform.Repo.Migrations.CreateRequests do
       add :params, :map
       add :status, :string
       add :response, :text
-      add :latency, :integer
       add :tokens, :integer
       add :reward, :integer
+      add :time_start, :utc_datetime
+      add :time_end, :utc_datetime
       add :requester_id, references(:users, on_delete: :nothing)
       add :worker_id, references(:users, on_delete: :nothing)
 

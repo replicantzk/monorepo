@@ -1,24 +1,10 @@
 defmodule PlatformWeb.CompletionController do
   use PlatformWeb, :controller
-  alias Platform.Accounts.User
   alias Platform.AMQPPublisher
   alias Platform.API
   alias Platform.API.ParamsCompletion
   alias Platform.API.Request
   alias Platform.Model
-  alias Platform.Repo
-  alias Platform.TaskSupervisor
-
-  def check_context_size(request) do
-    model = Model.get_by_key(request.params["model"])
-    messages = request.params["messages"]
-    full_text =
-      messages
-      |> Enum.map(fn %{"content" => content, "role" => role} -> "#{role}: #{content}\n" end)
-      |> Enum.join()
-
-    Model.count_tokens(full_text) <= model.context
-  end
 
   def new(conn, params) do
     request_attrs =
@@ -32,15 +18,14 @@ defmodule PlatformWeb.CompletionController do
 
     with %Ecto.Changeset{valid?: true} <- Request.changeset(%Request{}, request_attrs),
          %Ecto.Changeset{valid?: true} <- ParamsCompletion.changeset(%ParamsCompletion{}, params),
-         true <- check_context_size(request_attrs)
-          do
-      request_handler(conn, request_attrs, time_start)
+         :ok <- AMQPPublisher.publish(request_attrs) do
+      handle_request(conn, request_attrs)
     else
       %Ecto.Changeset{valid?: false} = changeset ->
         error_changeset(conn, changeset)
 
-      false ->
-        error(conn, nil, request_attrs, :context_size, time_start)
+      {:error, reason} ->
+        error(conn, request_attrs, reason)
     end
   end
 
@@ -48,10 +33,10 @@ defmodule PlatformWeb.CompletionController do
     Phoenix.PubSub.subscribe(Platform.PubSub, "requests:" <> request_attrs.uuid)
 
     receive do
-      {:result, worker_id, response} ->
+      {:result, worker_id, result} ->
         request_attrs = Map.put(request_attrs, :worker_id, worker_id)
-        request_attrs = Map.put(request_attrs, :response, extract_text_result(response))
-        success(conn, request_attrs)
+        request_attrs = Map.put(request_attrs, :response, extract_text_result(result))
+        success(conn, request_attrs, result)
 
       {:chunk_start, worker_id} ->
         request_attrs = Map.put(request_attrs, :worker_id, worker_id)
@@ -72,7 +57,7 @@ defmodule PlatformWeb.CompletionController do
     end
   end
 
-  defp sse_loop(conn, worker_user_id, request_attrs, time_start, text_acc \\ "") do
+  defp sse(conn, request_attrs, text_acc \\ "") do
     receive do
       {:chunk, chunk} ->
         text_acc = text_acc <> extract_text_chunk(chunk)
@@ -90,47 +75,40 @@ defmodule PlatformWeb.CompletionController do
         success_chunk(conn, request_attrs)
 
       {:error, reason} ->
-        error_chunk(conn, worker_user_id, request_attrs, time_start, reason)
+        error_chunk(conn, request_attrs, reason)
 
       _unknown ->
-        sse_loop(conn, worker_user_id, request_attrs, time_start, text_acc)
+        sse(conn, request_attrs, text_acc)
     after
       Application.fetch_env!(:platform, :request_timeout_chunk) ->
-        error_chunk(conn, worker_user_id, request_attrs, time_start, "timeout")
+        error_chunk(conn, request_attrs, :timeout_chunk)
     end
   end
 
-  defp success(conn, worker_user_id, request_attrs, time_start, result) do
-    text = extract_text_result(result)
-    handle_success(worker_user_id, request_attrs, time_start, result["model"], text)
+  defp success(conn, request_attrs, result) do
+    handle_success(request_attrs)
 
     conn
     |> put_status(200)
     |> json(result)
   end
 
-  defp success_chunk(conn, worker_user_id, request_attrs, time_start, text_acc) do
-    handle_success(
-      worker_user_id,
-      request_attrs,
-      time_start,
-      request_attrs.params["model"],
-      text_acc
-    )
+  defp success_chunk(conn, request_attrs) do
+    handle_success(request_attrs)
 
     conn
   end
 
-  defp error(conn, worker_user_id, request_attrs, time_start, reason) do
-    handle_error(worker_user_id, request_attrs, time_start, reason)
+  defp error(conn, request_attrs, reason) do
+    handle_error(request_attrs, reason)
 
     conn
     |> put_status(500)
     |> json(%{error: reason})
   end
 
-  def error_chunk(conn, worker_user_id, request_attrs, time_start, reason) do
-    handle_error(worker_user_id, request_attrs, time_start, reason)
+  def error_chunk(conn, request_attrs, reason) do
+    handle_error(request_attrs, reason)
 
     Plug.Conn.chunk(conn, format_error(reason))
 
@@ -164,17 +142,15 @@ defmodule PlatformWeb.CompletionController do
           n_tokens
         )
 
-      new_request_attrs =
+      request_attrs =
         request_attrs
         |> Map.put(:status, "200")
-        |> Map.put(:latency, latency)
-        |> Map.put(:response, text)
-        |> Map.put(:tokens, num_tokens)
+        |> Map.put(:tokens, n_tokens)
         |> Map.put(:reward, reward)
         |> Map.put(:time_end, DateTime.utc_now())
 
-      worker_user = Repo.get(User, worker_user_id)
-      requester_user = Repo.get(User, request_attrs.requester_id)
+      worker_id = request_attrs.worker_id
+      requester_id = request_attrs.requester_id
 
       request_attrs =
         with true <- requester_id != worker_id,
