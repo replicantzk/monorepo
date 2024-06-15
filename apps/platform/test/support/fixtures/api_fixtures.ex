@@ -7,31 +7,16 @@ defmodule Platform.APIFixtures do
   @doc """
   Generate a token.
   """
-  def token_fixture(attrs \\ %{}) do
+  def token_fixture(%{user_id: user_id} = attrs) do
     {:ok, token} =
       attrs
       |> Enum.into(%{
-        value: "some value"
+        user_id: user_id,
+        value: Ecto.UUID.generate()
       })
       |> Platform.API.create_token()
 
     token
-  end
-
-  @doc """
-  Generate a webhook.
-  """
-  def webhook_fixture(attrs \\ %{}) do
-    {:ok, webhook} =
-      attrs
-      |> Enum.into(%{
-        input: %{},
-        status: "some status",
-        url: "some url"
-      })
-      |> Platform.API.create_webhook()
-
-    webhook
   end
 
   @doc """

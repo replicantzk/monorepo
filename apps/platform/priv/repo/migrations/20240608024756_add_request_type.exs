@@ -3,7 +3,7 @@ defmodule Platform.Repo.Migrations.AddRequestType do
 
   def change do
     alter table(:requests) do
-      add :request_type, :string
+      add :type, :string
     end
   end
 end

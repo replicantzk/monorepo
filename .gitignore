@@ -1,3 +1,4 @@
 .vscode/
+*.sublime-*
 .env
 .lb_conn
