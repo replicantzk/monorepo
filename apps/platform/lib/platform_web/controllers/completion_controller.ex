@@ -9,7 +9,6 @@ defmodule PlatformWeb.CompletionController do
   def new(conn, params) do
     request_attrs =
       %Request{
-        id: Ecto.UUID.generate(),
         requester_id: conn.assigns.current_user.id,
         type: :completion,
         params: params,
@@ -34,25 +33,27 @@ defmodule PlatformWeb.CompletionController do
     Phoenix.PubSub.subscribe(Platform.PubSub, "requests:" <> request_attrs.id)
 
     receive do
-      {:result, worker_user_id, response} ->
+      {:result, worker_id, response} ->
+        request_attrs = %{request_attrs | worker_id: worker_id}
+
         case get_in_result(response) do
           {:ok, response_text} ->
-            success(conn, %{request_attrs | worker_id: worker_user_id, response: response_text})
+            success(conn, %{request_attrs | response: response_text})
 
           {:error, reason} ->
-            error(conn, %{request_attrs | worker_id: worker_user_id}, reason)
+            error(conn,request_attrs, reason)
         end
 
-      {:chunk_start, worker_user_id} ->
+      {:chunk_start, worker_id} ->
         conn
         |> put_resp_header("connection", "keep-alive")
         |> put_resp_header("Content-Type", "text/event-stream; charset=utf-8")
         |> put_resp_header("Cache-Control", "no-cache")
         |> Plug.Conn.send_chunked(200)
-        |> sse(%{request_attrs | worker_id: worker_user_id})
+        |> sse(%{request_attrs | worker_id: worker_id})
 
-      {:error, worker_user_id, reason} ->
-        error(conn, %{request_attrs | worker_id: worker_user_id}, reason)
+      {:error, worker_id, reason} ->
+        error(conn, %{request_attrs | worker_id: worker_id}, reason)
     after
       Application.fetch_env!(:platform, :request_timeout) ->
         error(conn, request_attrs, :timeout)

@@ -6,7 +6,7 @@ defmodule Platform.API.Request do
 
   @derive {Jason.Encoder, only: [:id, :params]}
 
-  @primary_key {:id, :string, autogenerate: false}
+  @primary_key {:id, Ecto.UUID, autogenerate: true}
   schema "requests" do
     field :status, :string
     field :type, Ecto.Enum, values: [:completion]
