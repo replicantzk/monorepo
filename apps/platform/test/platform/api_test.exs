@@ -98,7 +98,7 @@ defmodule Platform.APITest do
         response: "some response",
         params: %{},
         requester_id: user.id,
-        time_start: DateTime.utc_now(),
+        time_start: DateTime.utc_now()
       }
 
       assert {:ok, %Request{} = request} = API.create_request(valid_attrs)

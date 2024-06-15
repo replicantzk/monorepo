@@ -41,7 +41,7 @@ defmodule PlatformWeb.CompletionController do
             success(conn, %{request_attrs | response: response_text})
 
           {:error, reason} ->
-            error(conn,request_attrs, reason)
+            error(conn, request_attrs, reason)
         end
 
       {:chunk_start, worker_id} ->

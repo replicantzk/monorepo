@@ -35,7 +35,7 @@ defmodule Platform.API.Request do
       :reward,
       :time_start,
       :time_end,
-      :requester_id,
+      :requester_id
       # :worker_id,
       # :transaction_id
     ])
