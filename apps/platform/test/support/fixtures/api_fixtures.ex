@@ -7,11 +7,12 @@ defmodule Platform.APIFixtures do
   @doc """
   Generate a token.
   """
-  def token_fixture(attrs \\ %{}) do
+  def token_fixture(%{user_id: user_id} = attrs) do
     {:ok, token} =
       attrs
       |> Enum.into(%{
-        value: "some value"
+        user_id: user_id,
+        value: Ecto.UUID.generate()
       })
       |> Platform.API.create_token()
 

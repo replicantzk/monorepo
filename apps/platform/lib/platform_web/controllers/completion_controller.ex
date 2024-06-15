@@ -12,11 +12,12 @@ defmodule PlatformWeb.CompletionController do
   def check_context_size(request) do
     model = Model.get_by_key(request.params["model"])
     messages = request.params["messages"]
+
     full_text =
       messages
       |> Enum.map(fn %{"content" => content, "role" => role} -> "#{role}: #{content}\n" end)
       |> Enum.join()
-  
+
     Model.count_tokens(full_text) <= model.context
   end
 
@@ -30,8 +31,7 @@ defmodule PlatformWeb.CompletionController do
 
     with %Ecto.Changeset{valid?: true} <- Request.changeset(%Request{}, request_attrs),
          %Ecto.Changeset{valid?: true} <- ParamsCompletion.changeset(%ParamsCompletion{}, params),
-         true <- check_context_size(request_attrs)
-          do
+         true <- check_context_size(request_attrs) do
       request_handler(conn, request_attrs)
     else
       %Ecto.Changeset{valid?: false} = changeset ->
