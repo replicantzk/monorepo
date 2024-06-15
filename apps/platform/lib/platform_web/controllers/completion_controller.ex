@@ -16,19 +16,19 @@ defmodule PlatformWeb.CompletionController do
       messages
       |> Enum.map(fn %{"content" => content, "role" => role} -> "#{role}: #{content}\n" end)
       |> Enum.join()
-  
+
     Model.count_tokens(full_text) <= model.context
   end
 
   def new(conn, params) do
-    request_attrs = %{
-      id: Ecto.UUID.generate(),
-      type: :completion,
-      params: params,
-      requester_id: conn.assigns.current_user.id
-    }
-
-    time_start = :os.timestamp()
+    request_attrs =
+      %{
+        uuid: Ecto.UUID.generate(),
+        requester_id: conn.assigns.current_user.id,
+        type: :completion,
+        params: params,
+        time_start: DateTime.utc_now()
+      }
 
     with %Ecto.Changeset{valid?: true} <- Request.changeset(%Request{}, request_attrs),
          %Ecto.Changeset{valid?: true} <- ParamsCompletion.changeset(%ParamsCompletion{}, params),
@@ -44,52 +44,50 @@ defmodule PlatformWeb.CompletionController do
     end
   end
 
-  defp request_handler(conn, request_attrs, time_start) do
+  defp handle_request(conn, request_attrs) do
+    Phoenix.PubSub.subscribe(Platform.PubSub, "requests:" <> request_attrs.uuid)
 
-    case AMQPPublisher.publish(request_attrs) do
-      :ok ->
-        Phoenix.PubSub.subscribe(Platform.PubSub, "requests:" <> request_attrs.id)
+    receive do
+      {:result, worker_id, response} ->
+        request_attrs = Map.put(request_attrs, :worker_id, worker_id)
+        request_attrs = Map.put(request_attrs, :response, extract_text_result(response))
+        success(conn, request_attrs)
 
-        receive do
-          {:result, worker_user_id, result} ->
-            success(conn, worker_user_id, request_attrs, time_start, result)
+      {:chunk_start, worker_id} ->
+        request_attrs = Map.put(request_attrs, :worker_id, worker_id)
 
-          {:chunk_start, worker_user_id} ->
-            conn
-            |> put_resp_header("Cache-Control", "no-cache")
-            |> put_resp_header("connection", "keep-alive")
-            |> put_resp_header("Content-Type", "text/event-stream; charset=utf-8")
-            |> Plug.Conn.send_chunked(200)
-            |> sse_loop(worker_user_id, request_attrs, time_start)
+        conn
+        |> put_resp_header("connection", "keep-alive")
+        |> put_resp_header("Content-Type", "text/event-stream; charset=utf-8")
+        |> put_resp_header("Cache-Control", "no-cache")
+        |> Plug.Conn.send_chunked(200)
+        |> sse(request_attrs)
 
-          {:error, worker_user_id, reason} ->
-            error(conn, worker_user_id, request_attrs, time_start, reason)
-        after
-          Application.fetch_env!(:platform, :request_timeout) ->
-            error(conn, nil, request_attrs, time_start, "timeout")
-        end
-
-      {:error, reason} ->
-        error(conn, nil, request_attrs, time_start, reason)
+      {:error, worker_id, reason} ->
+        request_attrs = Map.put(request_attrs, :worker_id, worker_id)
+        error(conn, request_attrs, reason)
+    after
+      Application.fetch_env!(:platform, :request_timeout) ->
+        error(conn, request_attrs, :timeout)
     end
   end
 
   defp sse_loop(conn, worker_user_id, request_attrs, time_start, text_acc \\ "") do
     receive do
       {:chunk, chunk} ->
-        text = extract_text_chunk(chunk)
-        text_acc = text_acc <> text
+        text_acc = text_acc <> extract_text_chunk(chunk)
 
         case Plug.Conn.chunk(conn, chunk) do
           {:ok, conn} ->
-            sse_loop(conn, worker_user_id, request_attrs, time_start, text_acc)
+            sse(conn, request_attrs, text_acc)
 
           {:error, reason} ->
-            error_chunk(conn, worker_user_id, request_attrs, time_start, reason)
+            error_chunk(conn, request_attrs, reason)
         end
 
       :chunk_end ->
-        success_chunk(conn, worker_user_id, request_attrs, time_start, text_acc)
+        request_attrs = Map.put(request_attrs, :response, text_acc)
+        success_chunk(conn, request_attrs)
 
       {:error, reason} ->
         error_chunk(conn, worker_user_id, request_attrs, time_start, reason)
@@ -134,7 +132,9 @@ defmodule PlatformWeb.CompletionController do
   def error_chunk(conn, worker_user_id, request_attrs, time_start, reason) do
     handle_error(worker_user_id, request_attrs, time_start, reason)
 
-    Plug.Conn.chunk(conn, "error: #{reason}\n")
+    Plug.Conn.chunk(conn, format_error(reason))
+
+    conn
   end
 
   defp error_changeset(conn, changeset) do
@@ -144,12 +144,25 @@ defmodule PlatformWeb.CompletionController do
     |> render("error.json", changeset: changeset)
   end
 
-  defp handle_success(worker_user_id, request_attrs, time_start, model, text) do
-    Task.Supervisor.start_child(TaskSupervisor, fn ->
-      time_end = :os.timestamp()
-      latency = diff_timestamp_ms(time_start, time_end)
-      num_tokens = Model.count_tokens(text)
-      reward = Model.calculate_reward(model, num_tokens)
+  defp handle_error(request_attrs, reason) do
+    Task.start(fn ->
+      request_attrs
+      |> Map.put(:status, "500")
+      |> Map.put(:time_end, DateTime.utc_now())
+      |> Map.put(:response, format_error(reason))
+      |> API.create_request()
+    end)
+  end
+
+  defp handle_success(request_attrs) do
+    Task.start(fn ->
+      n_tokens = Model.count_tokens(request_attrs.response)
+
+      reward =
+        Model.calculate_reward(
+          get_in(request_attrs, [:params, "model"]),
+          n_tokens
+        )
 
       new_request_attrs =
         request_attrs
@@ -158,47 +171,36 @@ defmodule PlatformWeb.CompletionController do
         |> Map.put(:response, text)
         |> Map.put(:tokens, num_tokens)
         |> Map.put(:reward, reward)
-        |> Map.put(:worker_id, worker_user_id)
+        |> Map.put(:time_end, DateTime.utc_now())
 
       worker_user = Repo.get(User, worker_user_id)
       requester_user = Repo.get(User, request_attrs.requester_id)
 
-      requester_topic = "transactions:#{requester_user.id}"
-      worker_topic = "transactions:#{worker_user.id}"
+      request_attrs =
+        with true <- requester_id != worker_id,
+             {:ok, transaction} <- API.transfer_credits(reward, requester_id, worker_id) do
+          requester_topic = "transactions:#{requester_id}"
+          worker_topic = "transactions:#{worker_id}"
 
-      tx_id =
-        case API.transfer_credits(reward, worker_user, requester_user) do
-          {:ok, transaction} when requester_user.id != worker_user.id ->
-            Phoenix.PubSub.broadcast(
-              Platform.PubSub,
-              requester_topic,
-              {:transaction, transaction}
-            )
+          Phoenix.PubSub.broadcast(
+            Platform.PubSub,
+            requester_topic,
+            {:transaction, transaction}
+          )
 
-            Phoenix.PubSub.broadcast(Platform.PubSub, worker_topic, {:transaction, transaction})
-            transaction.id
+          Phoenix.PubSub.broadcast(
+            Platform.PubSub,
+            worker_topic,
+            {:transaction, transaction}
+          )
 
+          Map.put(request_attrs, :transaction_id, transaction.id)
+        else
           _ ->
-            nil
+            request_attrs
         end
 
-      new_request_attrs = Map.put(new_request_attrs, :transaction_id, tx_id)
-      API.create_request(new_request_attrs)
-    end)
-  end
-
-  defp handle_error(_worker_user_id, request_attrs, time_start, reason) do
-    Task.Supervisor.start_child(TaskSupervisor, fn ->
-      time_end = :os.timestamp()
-      latency = diff_timestamp_ms(time_start, time_end)
-
-      new_request_attrs =
-        request_attrs
-        |> Map.put(:status, "500")
-        |> Map.put(:latency, latency)
-        |> Map.put(:response, reason)
-
-      API.create_request(new_request_attrs)
+      API.create_request(request_attrs)
     end)
   end
 
@@ -273,9 +275,11 @@ defmodule PlatformWeb.CompletionController do
     end)
   end
 
-  def diff_timestamp_ms(time1, time2) do
-    :timer.now_diff(time2, time1)
-    |> div(1000)
-    |> round()
-  end
+  defp format_error_prefix(), do: "ERROR: "
+
+  defp format_error(reason) when is_atom(reason),
+    do: format_error_prefix() <> Atom.to_string(reason)
+
+  defp format_error(reason) when is_binary(reason), do: format_error_prefix() <> reason
+  defp format_error(reason), do: format_error_prefix() <> inspect(reason)
 end

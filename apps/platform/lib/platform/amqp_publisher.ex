@@ -36,14 +36,17 @@ defmodule Platform.AMQPPublisher do
   def publish_queue(chan, request) do
     model = Map.fetch!(request.params, "model")
 
-    case AMQP.Basic.publish(
-           chan,
-           @amqp_exchange,
-           model,
-           Jason.encode!(request),
-           mandatory: true
-         ) do
-      :ok -> :ok
+    with {:ok, payload} <- Jason.encode(request),
+         :ok <-
+           AMQP.Basic.publish(
+             chan,
+             @amqp_exchange,
+             model,
+             payload,
+             mandatory: true
+           ) do
+      :ok
+    else
       {:error, reason} -> {:error, reason}
     end
   end

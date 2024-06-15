@@ -11,13 +11,13 @@ defmodule Platform.AMQPConsumer do
   @worker_topic "request"
 
   def start(model) do
-    consumers = Registry.lookup(RegistryAMQPConsumer, model)
     n_consumers = Application.fetch_env!(:platform, :amqp_consumers_per_model)
+    consumers = Registry.lookup(RegistryAMQPConsumer, model)
     diff = n_consumers - length(consumers)
 
     if diff > 0 do
       1..diff
-      |> Enum.map(fn _ ->
+      |> Enum.each(fn _n ->
         DynamicSupervisor.start_child(
           DynamicSupervisorAMQPConsumer,
           {__MODULE__, [model: model]}
@@ -30,7 +30,10 @@ defmodule Platform.AMQPConsumer do
     consumers = Registry.lookup(RegistryAMQPConsumer, model)
 
     Enum.each(consumers, fn {pid, _value} ->
-      DynamicSupervisor.terminate_child(DynamicSupervisorAMQPConsumer, pid)
+      DynamicSupervisor.terminate_child(
+        DynamicSupervisorAMQPConsumer,
+        pid
+      )
     end)
   end
 
@@ -56,15 +59,6 @@ defmodule Platform.AMQPConsumer do
   end
 
   @impl true
-  def terminate(_reason, _state) do
-    models = Registry.keys(RegistryAMQPConsumer, self())
-
-    Enum.each(models, fn model ->
-      stop(model)
-    end)
-  end
-
-  @impl true
   def handle_info({:basic_consume_ok, %{consumer_tag: _consumer_tag}}, chan) do
     {:noreply, chan}
   end
@@ -85,7 +79,7 @@ defmodule Platform.AMQPConsumer do
     case WorkerBalancer.get_worker(model) do
       {:ok, worker_id} ->
         request = Jason.decode!(payload)
-        request_id = Map.fetch!(request, "id")
+        request_id = Map.fetch!(request, "uuid")
         params = Map.fetch!(request, "params")
         Basic.ack(chan, delivery_tag)
         push(worker_id, request_id, params)
