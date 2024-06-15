@@ -33,7 +33,7 @@ import { baseURL, releaseFiles } from "../utils/versions";
     {Object.keys(releaseFiles).map((name) => (
       <DownloadButton name={name} href={`${baseURL}/${releaseFiles[name]}`} forward={"/docs/quickstart/worker"} />
     ))}
-    <DownloadButton name={`Docker`} href={'https://github.com/orgs/replicantzk/packages/container/package/worker-cli'} />
+    <DownloadButton name={`Docker`} href={'/docs/quickstart/worker#docker'} />
   </div>
 </div>
 
