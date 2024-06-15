@@ -87,22 +87,21 @@ defmodule Platform.APITest do
     test "get_request!/1 returns the request with given id" do
       user = user_fixture()
       request = request_fixture(%{requester_id: user.id})
-      assert API.get_request!(request.id) == request
+      assert API.get_request!(request.uuid) == request
     end
 
     test "create_request/1 with valid data creates a request" do
       user = user_fixture()
 
       valid_attrs = %{
-        id: "some id",
         status: "some status",
         response: "some response",
         params: %{},
-        requester_id: user.id
+        requester_id: user.id,
+        time_start: DateTime.utc_now(),
       }
 
       assert {:ok, %Request{} = request} = API.create_request(valid_attrs)
-      assert request.id == "some id"
       assert request.status == "some status"
       assert request.response == "some response"
       assert request.params == %{}
@@ -117,14 +116,12 @@ defmodule Platform.APITest do
       request = request_fixture(%{requester_id: user.id})
 
       update_attrs = %{
-        id: "some updated id",
         status: "some updated status",
         response: "some updated response",
         params: %{}
       }
 
       assert {:ok, %Request{} = request} = API.update_request(request, update_attrs)
-      assert request.id == "some updated id"
       assert request.status == "some updated status"
       assert request.response == "some updated response"
       assert request.params == %{}
@@ -134,14 +131,14 @@ defmodule Platform.APITest do
       user = user_fixture()
       request = request_fixture(%{requester_id: user.id})
       assert {:error, %Ecto.Changeset{}} = API.update_request(request, @invalid_attrs)
-      assert request == API.get_request!(request.id)
+      assert request == API.get_request!(request.uuid)
     end
 
     test "delete_request/1 deletes the request" do
       user = user_fixture()
       request = request_fixture(%{requester_id: user.id})
       assert {:ok, %Request{}} = API.delete_request(request)
-      assert_raise Ecto.NoResultsError, fn -> API.get_request!(request.id) end
+      assert_raise Ecto.NoResultsError, fn -> API.get_request!(request.uuid) end
     end
 
     test "change_request/1 returns a request changeset" do

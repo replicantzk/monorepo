@@ -25,7 +25,7 @@ user1_attrs = %{
 {:ok, user1} = Accounts.register_user(user1_attrs)
 {:ok, _token1} = Accounts.assign_user_token(user1, token1)
 
-{:ok, _transaction1} = API.transfer_credits(1_000_000, user1)
+{:ok, _transaction1} = API.transfer_credits(1_000_000, user1.id)
 
 user2_attrs = %{
   user1_attrs
@@ -35,4 +35,4 @@ user2_attrs = %{
 {:ok, user2} = Accounts.register_user(user2_attrs)
 {:ok, _token2} = Accounts.assign_user_token(user2, token2)
 
-{:ok, _transaction2} = API.transfer_credits(100_000, user2)
+{:ok, _transaction2} = API.transfer_credits(100_000, user2.id)

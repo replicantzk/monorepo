@@ -16,7 +16,6 @@ defmodule Platform.Application do
       {Finch, name: Platform.Finch},
       PlatformWeb.Endpoint,
       {Task.Supervisor, name: Platform.TaskSupervisor},
-      {Platform.ChannelMonitor, name: :worker},
       {Platform.WorkerBalancer, []},
       {Platform.WorkerBalancerCluster, []},
       {Registry, keys: :duplicate, name: Platform.RegistryAMQPConsumer},
