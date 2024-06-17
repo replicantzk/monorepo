@@ -15,7 +15,7 @@ defmodule PlatformWeb.WorkersLive do
           <%= if workers do %>
             <h3 class="text-lg font-bold mb-2"><%= model %>(<%= length(workers) %>)</h3>
             <div class="flex flex-wrap">
-              <%= for {id, status, node} <- workers do %>
+              <%= for {id, _model, status, node} <- workers do %>
                 <div
                   class={"w-8 h-8 bg-gray-300 aspect-w-1 aspect-h-1 " <> "#{status_color(status)} mr-2 mb-2"}
                   title={"id: #{id}, status: #{status}, node: #{node}"}

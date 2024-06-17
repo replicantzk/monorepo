@@ -5,7 +5,7 @@ defmodule Platform.MixProject do
     [
       app: :platform,
       version: "0.1.0",
-      elixir: "~> 1.16",
+      elixir: "~> 1.17",
       elixirc_paths: elixirc_paths(Mix.env()),
       start_permanent: Mix.env() == :prod,
       dialyzer: dialyzer(),
