@@ -4,11 +4,11 @@
 
 *Own your intelligence.*
 
-The Replicant Network is an open-source decentralized AI inference network. Download the desktop app to earn credits for serving requests routed to you from our OpenAI-compatible API. Credits are used to make requests to the API, and a minimum balance is currently required to participate as a worker to mitigate abuse. You can request this initial balance in the [Discord](https://discord.gg/yvWPVCS7NH) server. Start with the [TLDR](https://replicantzk.com/about/tldr) and [quickstart](https://replicantzk.com/docs/quickstart/api) guides on our [site](https://replicantzk.com) to learn more.
+The Replicant Network is an open-source decentralized AI inference network. You can download the desktop app to earn credits for serving requests routed to you from our OpenAI-compatible API. Credits are used to make requests to the API for inference. Join the [Discord](https://discord.gg/yvWPVCS7NH) server and read the [TLDR](https://replicantzk.com/about/tldr) and [quickstart](https://replicantzk.com/docs/quickstart/api) guides on our [site](https://replicantzk.com) to learn more.
 
 ## Components
 
-Components labeled `(experimental)` are in development to enable permisionless participation and provide assurances for response integrity.
+Components marked `(experimental)` are being researched to address issues such as worker spoofing and provide assurances for response integrity.
 
 ```bash
 .
@@ -25,7 +25,6 @@ Components labeled `(experimental)` are in development to enable permisionless p
 └── vendor # External repositories
     ├── chat # Gradio ChatInterface demo
     └── protokit # `appchain` dependency
-
 ```
 
 ## Developing
@@ -43,7 +42,7 @@ These are all the tools used in development:
 - [k6](https://k6.io/docs/get-started/installation/)
 - [direnv](https://direnv.net/docs/installation.html)
 
-Depending on the component you are working on, you may only need a subset of these tools.
+Depending on the component you are working on, you may only need a subset.
 
 ### Setup
 
@@ -54,22 +53,15 @@ Copy the file `.env_` to `.env` and fill in the required values.
 Set up the apps by running:
 
 ```bash
-sudo apt-get install unzip
+sudo apt-get install unzip # dependency for mise elixir
 mise plugin add elixir https://github.com/asdf-vm/asdf-elixir.git
-direnv allow
 chmod +x ./sh/*
-./sh/submodules.sh
-./sh/install.sh
+./sh/setup.sh
 ```
 
 Each component may require it's own individual setup ex. setting up the database with `sh/db.sh` and `mix setup` before being using `sh/start.sh` to run the app in `./apps/platform`. 
 
-You can also run all the components in containers by running:
-
-```bash
-docker compose build
-docker compose up
-```
+You can also run all the components in containers with Docker Compose by running `docker compose up`/`sh/dcrun.sh` and force a fresh rebuild with `sh/dcrun.sh -f`.
 
 ## License
 
