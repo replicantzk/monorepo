@@ -4,6 +4,7 @@ defmodule Platform.Repo.Migrations.CreateRequests do
   def change do
     create table(:requests, primary_key: false) do
       add :uuid, :string, primary_key: true
+      add :type, :string
       add :params, :map
       add :status, :string
       add :response, :text

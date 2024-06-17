@@ -10,8 +10,8 @@ on:
       - apps/platform/**
 
 env:
-  ELIXIR_VERSION: ${{ vars.ELIXIR_VERSION }}
-  OTP_VERSION: ${{ vars.OTP_VERSION }}
+  ELIXIR_VERSION: 1.17.0-otp-26
+  OTP_VERSION: 26.2.5
 
 jobs:
   build:
@@ -25,9 +25,9 @@ jobs:
       - name: Setup elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: ${{ env.ELIXIR_VERSION }}
           otp-version: ${{ env.OTP_VERSION }}
-
+          elixir-version: ${{ env.ELIXIR_VERSION }}
+          
       - name: Retrieve Mix Dependencies Cache
         uses: actions/cache@v3
         id: mix-cache

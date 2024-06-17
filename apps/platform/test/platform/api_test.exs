@@ -87,13 +87,14 @@ defmodule Platform.APITest do
     test "get_request!/1 returns the request with given id" do
       user = user_fixture()
       request = request_fixture(%{requester_id: user.id})
-      assert API.get_request!(request.id) == request
+      assert API.get_request!(request.uuid) == request
     end
 
     test "create_request/1 with valid data creates a request" do
       user = user_fixture()
 
       valid_attrs = %{
+        uuid: Ecto.UUID.generate(),
         status: "some status",
         response: "some response",
         params: %{},
@@ -131,14 +132,14 @@ defmodule Platform.APITest do
       user = user_fixture()
       request = request_fixture(%{requester_id: user.id})
       assert {:error, %Ecto.Changeset{}} = API.update_request(request, @invalid_attrs)
-      assert request == API.get_request!(request.id)
+      assert request == API.get_request!(request.uuid)
     end
 
     test "delete_request/1 deletes the request" do
       user = user_fixture()
       request = request_fixture(%{requester_id: user.id})
       assert {:ok, %Request{}} = API.delete_request(request)
-      assert_raise Ecto.NoResultsError, fn -> API.get_request!(request.id) end
+      assert_raise Ecto.NoResultsError, fn -> API.get_request!(request.uuid) end
     end
 
     test "change_request/1 returns a request changeset" do

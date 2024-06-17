@@ -20,6 +20,10 @@ defmodule Platform.Model do
     Enum.map(supported_models(), fn model -> model.name end)
   end
 
+  def get_by_key(key) do
+    Enum.find(supported_models(), fn model -> model.name == key end)
+  end
+
   def count_tokens(text) when is_binary(text) do
     avg_tokens_per_word = Application.fetch_env!(:platform, :avg_tokens_per_word)
 
