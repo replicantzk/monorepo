@@ -35,8 +35,8 @@ if System.get_env("PHX_SERVER") do
 end
 
 config :platform,
-  request_timeout: get_env.("PLATFORM_REQUEST_TIMEOUT", 30000, :int),
-  request_timeout_chunk: get_env.("PLATFORM_REQUEST_TIMEOUT_CHUNK", 000, :int),
+  request_timeout: get_env.("PLATFORM_REQUEST_TIMEOUT", 30_000, :int),
+  request_timeout_chunk: get_env.("PLATFORM_REQUEST_TIMEOUT_CHUNK", 3000, :int),
   amqp_prefetch_count: get_env.("PLATFORM_REQUEST_PREFETCH_COUNT", 10, :int),
   amqp_pub_partitions: get_env.("PLATFORM_PARTITIONS_AMQP_PUBLISHER", 4, :int),
   amqp_cons_per_model: get_env.("PLATFORM_AMQP_CONSUMERS_PER_MODEL", 2, :int),

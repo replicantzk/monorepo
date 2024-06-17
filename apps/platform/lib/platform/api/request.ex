@@ -4,8 +4,8 @@ defmodule Platform.API.Request do
   alias Platform.Accounts.User
   alias Platform.API.Transaction
 
-  @derive {Jason.Encoder, only: [:uuid, :params]}
-  @primary_key {:uuid, :string, autogenerate: false}
+  @derive {Jason.Encoder, only: [:id, :params]}
+  @primary_key {:id, Ecto.UUID, autogenerate: true}
   schema "requests" do
     field :status, :string
     field :type, Ecto.Enum, values: [:completion]
@@ -27,7 +27,7 @@ defmodule Platform.API.Request do
   def changeset(request, attrs) do
     request
     |> cast(attrs, [
-      :uuid,
+      :id,
       :status,
       :params,
       :response,
@@ -37,6 +37,6 @@ defmodule Platform.API.Request do
       :time_end,
       :requester_id
     ])
-    |> validate_required([:params, :requester_id, :time_start])
+    |> validate_required([:params, :time_start, :requester_id])
   end
 end

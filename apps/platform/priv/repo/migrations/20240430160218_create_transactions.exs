@@ -6,6 +6,7 @@ defmodule Platform.Repo.Migrations.CreateTransactions do
       add :from, :integer
       add :to, :integer
       add :amount, :integer
+      add :request_id, references(:requests, type: :uuid, on_delete: :nothing)
 
       timestamps(type: :utc_datetime)
     end

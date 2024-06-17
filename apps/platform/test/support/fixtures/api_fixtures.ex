@@ -26,7 +26,6 @@ defmodule Platform.APIFixtures do
     {:ok, request} =
       attrs
       |> Enum.into(%{
-        uuid: Ecto.UUID.generate(),
         params: %{},
         response: "some response",
         status: "some status",

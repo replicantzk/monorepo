@@ -51,7 +51,7 @@ defmodule PlatformWeb.StatsLive do
       r in Request,
       where: r.inserted_at >= ago(^days, "day"),
       group_by: [fragment("date_trunc('day', ?)", r.inserted_at)],
-      select: %{day: fragment("date_trunc('day', ?)", r.inserted_at), count: count(r.uuid)}
+      select: %{day: fragment("date_trunc('day', ?)", r.inserted_at), count: count(r.id)}
     )
     |> Repo.all()
     |> Enum.map(fn %{day: day, count: count} ->
@@ -91,7 +91,7 @@ defmodule PlatformWeb.StatsLive do
     if data != [] do
       data
       |> Dataset.new()
-      |> Plot.new(BarChart, @plot_size.width, @plot_size.height)
+      |> Plot.new(BarChart, @plot_size.width, @plot_size.height, colour_palette: ["4ADE80"])
       |> Plot.axis_labels(x_label, y_label)
       |> Plot.to_svg()
     else

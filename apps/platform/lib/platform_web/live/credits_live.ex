@@ -40,11 +40,11 @@ defmodule PlatformWeb.CreditsLive do
       </form>
       <h2 class="text-xl font-semibold mb-2">Transactions</h2>
       <p class="mb-2">Showing last <%= @transactions_limit %> transactions</p>
-      <table class="table-auto w-full text-center">
+      <table class="table text-center">
         <thead>
-          <tr class="bg-gray-100">
-            <th class="px-4 py-2">Timestamp</th>
-            <th class="px-4 py-2">Amount</th>
+          <tr>
+            <th>Timestamp</th>
+            <th>Amount</th>
           </tr>
         </thead>
         <tbody>
@@ -53,14 +53,14 @@ defmodule PlatformWeb.CreditsLive do
               <td class="border px-4 py-2">
                 <%= NaiveDateTime.to_string(transaction.inserted_at) %>
               </td>
-              <td class={"bg-opacity-30 border px-4 py-2 " <>
-                if transaction.from == @current_user.id,
-                  do: "bg-orange-400",
-                  else: "bg-green-400"
+              <td class={"bg-opacity-20 border px-4 py-2  " <>
+                if transaction.to == @current_user.id,
+                  do: "bg-green-400",
+                  else: "bg-red-400"
               }>
-                <%= if transaction.from == @current_user.id,
-                  do: -transaction.amount,
-                  else: transaction.amount %>
+                <%= if transaction.to == @current_user.id,
+                  do: transaction.amount,
+                  else: -transaction.amount %>
               </td>
             </tr>
           <% end %>

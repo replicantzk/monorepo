@@ -1,7 +1,11 @@
 import Image from 'next/image'
 
 export default {
-  logo: <Image src="/logo.svg" alt="Logo" width={50} height={50} />,
+  logo: 
+  <div className="flex flex-row space-x-2 items-center">
+    <Image src="/logo.svg" alt="Logo" width={50} height={50} />
+    {/* <p>Replicant Network</p> */}
+  </div>,
   project: {
     link: "https://github.com/replicantzk/monorepo",
   },

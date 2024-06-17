@@ -9,7 +9,7 @@ defmodule PlatformWeb.CompletionController do
   def new(conn, params) do
     request_attrs =
       %{
-        uuid: Ecto.UUID.generate(),
+        id: Ecto.UUID.generate(),
         requester_id: conn.assigns.current_user.id,
         type: :completion,
         params: params,
@@ -30,7 +30,7 @@ defmodule PlatformWeb.CompletionController do
   end
 
   defp handle_request(conn, request_attrs) do
-    Phoenix.PubSub.subscribe(Platform.PubSub, "requests:" <> request_attrs.uuid)
+    Phoenix.PubSub.subscribe(Platform.PubSub, "requests:" <> request_attrs.id)
 
     receive do
       {:result, worker_id, result} ->
