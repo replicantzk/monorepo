@@ -6,19 +6,12 @@ defmodule Platform.WorkerBalancer do
 
   @table_name :balancer
 
+  def table_name(), do: @table_name
+
   def pubsub_topic(), do: "balancer_update"
 
   def dump() do
     :ets.tab2list(@table_name)
-  end
-
-  def free_all() do
-    :ets.insert(
-      @table_name,
-      Enum.map(:ets.tab2list(@table_name), fn {id, _model, _status} ->
-        {id, nil, :free}
-      end)
-    )
   end
 
   defp update_status(id, status) do
@@ -98,20 +91,20 @@ defmodule Platform.WorkerBalancer do
   end
 
   def handle_info(:agg, state) do
-    workers = :ets.tab2list(@table_name)
+    workers =
+      @table_name
+      |> :ets.tab2list()
+      |> Enum.map(fn {id, model, status} ->
+        {id, model, status, Node.self()}
+      end)
 
-    new_state =
-      if workers != state do
-        PubSub.broadcast(
-          Platform.PubSub,
-          pubsub_topic(),
-          {:agg, workers, Node.self()}
-        )
-
-        workers
-      else
-        state
-      end
+    if workers != state do
+      PubSub.broadcast(
+        Platform.PubSub,
+        pubsub_topic(),
+        {:agg, workers, Node.self()}
+      )
+    end
 
     Process.send_after(
       self(),
@@ -119,6 +112,6 @@ defmodule Platform.WorkerBalancer do
       Application.fetch_env!(:platform, :worker_agg_interval)
     )
 
-    {:noreply, new_state}
+    {:noreply, workers}
   end
 end

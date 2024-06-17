@@ -37,7 +37,7 @@ defmodule Platform.AMQPPublisher do
   end
 
   def publish_queue(chan, request) do
-    with model when is_binary(model) <- get_in(request, ["params", "model"]),
+    with {:ok, model} <- Map.fetch(request.params, "model"),
          {:ok, payload} <- Jason.encode(request),
          :ok <-
            AMQP.Basic.publish(
@@ -49,7 +49,7 @@ defmodule Platform.AMQPPublisher do
            ) do
       :ok
     else
-      nil -> {:error, :model_not_found}
+      :error -> {:error, :model_not_found}
       {:error, reason} -> {:error, reason}
     end
   end

@@ -4,7 +4,7 @@
 
 *Own your intelligence.*
 
-The Replicant Network is an open-source decentralized AI inference network. You can download the desktop app to earn credits for serving requests routed to you from our OpenAI-compatible API. Credits are used to make requests to the API for inference. Join the [Discord](https://discord.gg/yvWPVCS7NH) server and read the [TLDR](https://replicantzk.com/about/tldr) and [quickstart](https://replicantzk.com/docs/quickstart/api) guides on our [site](https://replicantzk.com) to learn more.
+The Replicant Network is a decentralized AI inference network. You can download the desktop app to earn credits for serving requests routed to you from our OpenAI-compatible API. Credits are used to make requests to the API for inference. Join the [Discord](https://discord.gg/yvWPVCS7NH) server and read the [TLDR](https://replicantzk.com/about/tldr) and [quickstart](https://replicantzk.com/docs/quickstart/api) guides on our [site](https://replicantzk.com) to learn more.
 
 ## Components
 
@@ -31,7 +31,7 @@ Components marked `(experimental)` are being researched to address issues such a
 
 ### Tools
 
-These are all the tools used in development:
+These are all the tools that need to be installed individually:
 
 - [docker](https://docs.docker.com/engine/install)
 - [docker compose](https://docs.docker.com/compose/install)
@@ -40,7 +40,7 @@ These are all the tools used in development:
 - [poetry](https://python-poetry.org/docs/#installing-with-pipx)
 - [solc](https://docs.soliditylang.org/en/latest/installing-solidity.html#installing-the-solidity-compiler)
 - [k6](https://k6.io/docs/get-started/installation/)
-- [direnv](https://direnv.net/docs/installation.html)
+- [direnv](https://direnv.net)
 
 Depending on the component you are working on, you may only need a subset.
 

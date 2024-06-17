@@ -72,12 +72,9 @@ defmodule Platform.WorkerBalancerCluster do
 
   @impl true
   def handle_info({:agg, workers, node}, state) do
-    new_workers =
-      Enum.map(workers, fn {id, model, status} ->
-        {id, model, status, node}
-      end)
-
-    :ets.insert(@table_name, new_workers)
+    if node != Node.self() do
+      :ets.insert(@table_name, workers)
+    end
 
     {:noreply, state}
   end

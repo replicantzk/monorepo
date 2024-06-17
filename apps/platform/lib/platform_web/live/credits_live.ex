@@ -5,6 +5,7 @@ defmodule PlatformWeb.CreditsLive do
   alias Platform.API.Transaction
 
   @transactions_limit 20
+  @error_clear 10_000
 
   def min_balance() do
     Application.fetch_env!(:platform, :credits_min_balance)
@@ -20,7 +21,7 @@ defmodule PlatformWeb.CreditsLive do
     <div class="flex flex-col space-y-2">
       <h1 class="text-2xl font-semibold mb-4">Credits</h1>
       <h2 class="text-xl font-semibold mb-2">Balance</h2>
-      <p>Required minimum credits: <%= @min_credits %></p>
+      <p>Required minimum credits: <%= min_balance() %></p>
       <p>Your balance is: <%= @balance %></p>
       <%= if @error != nil and is_atom(@error) do %>
         <p class="text-red-500"><%= format_error(@error) %></p>
@@ -79,17 +80,15 @@ defmodule PlatformWeb.CreditsLive do
       Phoenix.PubSub.subscribe(Platform.PubSub, topic)
     end
 
-    min_credits = Application.fetch_env!(:platform, :credits_min_balance)
     balance = API.get_credits_balance(current_user.id)
     transactions = API.get_transactions(current_user.id, limit: @transactions_limit)
 
     {:ok,
      socket
-     |> assign(min_credits: min_credits)
      |> assign(balance: balance)
      |> assign(error: nil)
-     |> assign(transactions_limit: @transactions_limit)
-     |> assign(transactions: transactions)}
+     |> assign(transactions: transactions)
+     |> assign(transactions_limit: @transactions_limit)}
   end
 
   defp format_error(:user_not_found), do: "User not found"
@@ -108,16 +107,16 @@ defmodule PlatformWeb.CreditsLive do
     socket =
       cond do
         user_to == nil ->
-          assign(socket, error: :user_not_found)
+          assign_error(socket, :user_not_found)
 
         amount < 0 ->
-          assign(socket, error: :negative_amount)
+          assign_error(socket, :negative_amount)
 
         amount < min_transfer() ->
-          assign(socket, error: :lt_minimum_transfer)
+          assign_error(socket, :lt_minimum_transfer)
 
         socket.assigns.balance < amount ->
-          assign(socket, error: :insufficient_funds)
+          assign_error(socket, :insufficient_funds)
 
         true ->
           case API.transfer_credits(amount, user_to.id, user_from.id) do
@@ -163,6 +162,16 @@ defmodule PlatformWeb.CreditsLive do
      socket
      |> assign(transactions: new_transactions)
      |> assign(balance: new_balance)}
+  end
+
+  @impl true
+  def handle_info(:clear_error, socket) do
+    {:noreply, assign(socket, error: nil)}
+  end
+
+  defp assign_error(socket, error) do
+    Process.send_after(self(), :clear_error, @error_clear)
+    assign(socket, error: error)
   end
 
   defp assign_current_user(socket, session) do

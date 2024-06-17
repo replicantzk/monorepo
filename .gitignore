@@ -1,8 +1,6 @@
 .elixir_ls/
 .history/
-.db/
-.mq/
-priv/plts/
+.vscode/
 .lb_conn
 .env
 *.sublime-*

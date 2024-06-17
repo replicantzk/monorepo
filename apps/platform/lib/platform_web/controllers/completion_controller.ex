@@ -153,9 +153,8 @@ defmodule PlatformWeb.CompletionController do
       requester_id = request_attrs.requester_id
 
       request_attrs =
-        with true <- Application.fetch_env!(:platform, :credits_enable),
-             true <- requester_id != worker_id,
-             {:ok, transaction} <- API.transfer_credits(reward, requester_id, worker_id) do
+        if requester_id != worker_id do
+          {:ok, transaction} = API.transfer_credits(reward, requester_id, worker_id)
           requester_topic = "transactions:#{requester_id}"
           worker_topic = "transactions:#{worker_id}"
 
@@ -173,8 +172,7 @@ defmodule PlatformWeb.CompletionController do
 
           Map.put(request_attrs, :transaction_id, transaction.id)
         else
-          _ ->
-            request_attrs
+          request_attrs
         end
 
       API.create_request(request_attrs)
