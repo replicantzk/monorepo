@@ -144,10 +144,10 @@ export default function Worker() {
           </button>
         )}
       </div>
-      {showLogs && (
-        <div className="flex-grow overflow-x-hidden overflow-y-auto max-h-fit">
+      {showLogs && logs.length > 0 && (
+        <div className="flex-grow overflow-x-hidden overflow-y-auto max-h-[300px] bg-base-200 border-2 border-base-300">
           <div className="w-full">
-            <pre className="whitespace-pre-wrap break-words">
+            <pre className="whitespace-pre-wrap break-words text-sm">
               {logs.map((log, index) => (
                 <span key={index} className="inline-block w-full">
                   {log}
