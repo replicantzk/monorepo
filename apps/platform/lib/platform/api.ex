@@ -292,6 +292,18 @@ defmodule Platform.API do
     end
   end
 
+  def transfer_credits(amount, user_to_id) do
+    {:ok, user_from} = get_system_credit_account()
+
+    transaction_attrs = %{
+      from: user_from.id,
+      to: user_to_id,
+      amount: amount
+    }
+
+    create_transaction(transaction_attrs)
+  end
+
   def transfer_credits(amount, user_to_id, user_from_id) do
     transaction_attrs = %{
       from: user_from_id,
@@ -306,15 +318,32 @@ defmodule Platform.API do
     end
   end
 
-  def transfer_credits(amount, user_to_id) do
-    {:ok, user_from} = get_system_credit_account()
+  def credits_mint(email, amount) do
+    case Accounts.get_user_by_email(@system_email) do
+      {:ok, user} -> transfer_credits(amount, user.id)
+      {:error, reason} -> {:error, reason}
+    end
+  end
 
-    transaction_attrs = %{
-      from: user_from.id,
-      to: user_to_id,
-      amount: amount
-    }
+  def credits_smite(email) do
+    with {:ok, system_user} <- get_system_credit_account(),
+         {:ok, user} <- Accounts.get_user_by_email(@system_email) do
+      balance = get_credits_balance(user.id)
+      transfer_credits(balance, user.id, system_user.id)
+    else
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
 
-    create_transaction(transaction_attrs)
+  def credits_smite(email, amount) do
+    with {:ok, system_user} <- get_system_credit_account(),
+         {:ok, user} <- Accounts.get_user_by_email(@system_email) do
+      balance = get_credits_balance(user.id)
+      transfer_credits(min(amount, balance), user.id, system_user.id)
+    else
+      {:error, reason} ->
+        {:error, reason}
+    end
   end
 end
