@@ -30,7 +30,7 @@ export const getSupportedModels = () => {
   return stubsToModels(
     [
       { name: "llama3:8b-instruct-q4_K_M", size: 4.9 },
-      { name: "phind-codellama:34b-v2-q4_K_M", size: 20 },
+      { name: "codestral:22b-v0.1-q4_K_M", size: 13 },
     ],
     {
       downloadStatus: "not downloaded",

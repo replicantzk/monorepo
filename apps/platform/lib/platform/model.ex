@@ -9,9 +9,9 @@ defmodule Platform.Model do
         context: 8_192
       },
       %{
-        name: "phind-codellama:34b-v2-q4_K_M",
-        size: 20,
-        context: 16_384
+        name: "codestral:22b-v0.1-q4_K_M",
+        size: 13,
+        context: 32_768
       }
     ]
   end
