@@ -14,6 +14,6 @@ primary_region = 'ord'
   dockerfile = './Dockerfile'
 
 [[vm]]
-  memory = '8gb'
+  memory = '16gb'
   cpu_kind = 'shared'
   cpus = 8

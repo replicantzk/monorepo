@@ -1,17 +1,16 @@
 import Config
 
+convert_var_to_type = fn
+  var, :int -> String.to_integer(var)
+  var, :float -> String.to_float(var)
+  var, :bool -> var == "true"
+  var, :string -> var
+end
+
 get_env = fn name, default, type ->
   case System.get_env(name) do
-    nil ->
-      default
-
-    var ->
-      case type do
-        :int -> String.to_integer(var)
-        :float -> String.to_float(var)
-        :bool -> var == "true"
-        :string -> var
-      end
+    nil -> default
+    var -> convert_var_to_type.(var, type)
   end
 end
 
@@ -37,24 +36,22 @@ end
 
 config :platform,
   request_timeout: get_env.("PLATFORM_REQUEST_TIMEOUT", 30000, :int),
-  request_timeout_chunk: get_env.("PLATFORM_REQUEST_TIMEOUT_CHUNK", 3000, :int),
-  amqp_consumers_per_model: get_env.("PLATFORM_AMQP_CONSUMERS_PER_MODEL", 2, :int),
-  cache_expire_tokens: get_env.("PLATFORM_CACHE_EXPIRE_TOKENS", 30000, :int),
-  cache_expire_requests: get_env.("PLATFORM_CACHE_EXPIRE_REQUESTS", 30000, :int),
-  cache_expire_connections: get_env.("PLATFORM_CACHE_EXPIRE_CONNECTIONS", 30000, :int),
-  cache_expire_balances: get_env.("PLATFORM_CACHE_EXPIRE_BALANCES", 30000, :int),
-  amqp_publisher_partitions: get_env.("PLATFORM_PARTITIONS_AMQP_PUBLISHER", 4, :int),
+  request_timeout_chunk: get_env.("PLATFORM_REQUEST_TIMEOUT_CHUNK", 000, :int),
+  amqp_prefetch_count: get_env.("PLATFORM_REQUEST_PREFETCH_COUNT", 10, :int),
+  amqp_pub_partitions: get_env.("PLATFORM_PARTITIONS_AMQP_PUBLISHER", 4, :int),
+  amqp_cons_per_model: get_env.("PLATFORM_AMQP_CONSUMERS_PER_MODEL", 2, :int),
   worker_agg_interval: get_env.("PLATFORM_WORKER_AGG_INTERVAL", 1000, :int),
-  worker_fetch_interval: get_env.("PLATFORM_WORKER_FETCH_INTERVAL", 1000, :int),
-  connection_limit_ps: get_env.("PLATFORM_CONNECTION_LIMITER_PS", 100, :int),
-  connection_limit_reset: get_env.("PLATFORM_CONNECTION_LIMITER_RESET", 1_000, :int),
-  rate_limit_enable: get_env.("PLATFORM_RATE_LIMIT", true, :bool),
-  rate_limit_reset: get_env.("PLATFORM_RATE_LIMIT_RESET", 10000, :int),
-  credits_system_email: get_env.("PLATFORM_SYSTEM_EMAIL", "platform@replicantzk.com", :string),
+  conn_limit_reset: get_env.("PLATFORM_CONNECTION_LIMITER_RESET", 30_000, :int),
+  conn_limit_ps: get_env.("PLATFORM_CONNECTION_LIMITER_PS", 100, :int),
+  rate_limit_reset: get_env.("PLATFORM_RATE_LIMIT_RESET", 10_000, :int),
   credits_min_balance: get_env.("PLATFORM_MIN_BALANCE", 1000, :int),
   credits_min_transfer: get_env.("PLATFORM_MIN_TRANSFER", 1000, :int),
   avg_tokens_per_word: get_env.("PLATFORM_AVG_TOKENS_PER_WORD", 0.75, :float),
-  size_gb_per_credit: get_env.("PLATFORM_SIZE_MB_PER_CREDIT", 0.2, :float)
+  size_gb_per_credit: get_env.("PLATFORM_SIZE_MB_PER_CREDIT", 0.2, :float),
+  cache_exp_tokens: get_env.("PLATFORM_CACHE_EXPIRE_TOKENS", 30000, :int),
+  cache_exp_requests: get_env.("PLATFORM_CACHE_EXPIRE_REQUESTS", 30000, :int),
+  cache_exp_conns: get_env.("PLATFORM_CACHE_EXPIRE_CONNECTIONS", 30000, :int),
+  cache_exp_balances: get_env.("PLATFORM_CACHE_EXPIRE_BALANCES", 30000, :int)
 
 config :amqp,
   connections: [

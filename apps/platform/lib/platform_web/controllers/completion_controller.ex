@@ -8,13 +8,13 @@ defmodule PlatformWeb.CompletionController do
 
   def new(conn, params) do
     request_attrs =
-      %Request{
+      %{
+        uuid: Ecto.UUID.generate(),
         requester_id: conn.assigns.current_user.id,
         type: :completion,
         params: params,
         time_start: DateTime.utc_now()
       }
-      |> Map.from_struct()
 
     with %Ecto.Changeset{valid?: true} <- Request.changeset(%Request{}, request_attrs),
          %Ecto.Changeset{valid?: true} <- ParamsCompletion.changeset(%ParamsCompletion{}, params),
@@ -24,36 +24,33 @@ defmodule PlatformWeb.CompletionController do
       %Ecto.Changeset{valid?: false} = changeset ->
         error_changeset(conn, changeset)
 
-      error ->
-        error(conn, request_attrs, error)
+      {:error, reason} ->
+        error(conn, request_attrs, reason)
     end
   end
 
   defp handle_request(conn, request_attrs) do
-    Phoenix.PubSub.subscribe(Platform.PubSub, "requests:" <> request_attrs.id)
+    Phoenix.PubSub.subscribe(Platform.PubSub, "requests:" <> request_attrs.uuid)
 
     receive do
-      {:result, worker_id, response} ->
-        request_attrs = %{request_attrs | worker_id: worker_id}
-
-        case get_in_result(response) do
-          {:ok, response_text} ->
-            success(conn, %{request_attrs | response: response_text})
-
-          {:error, reason} ->
-            error(conn, request_attrs, reason)
-        end
+      {:result, worker_id, result} ->
+        request_attrs = Map.put(request_attrs, :worker_id, worker_id)
+        request_attrs = Map.put(request_attrs, :response, extract_text_result(result))
+        success(conn, request_attrs, result)
 
       {:chunk_start, worker_id} ->
+        request_attrs = Map.put(request_attrs, :worker_id, worker_id)
+
         conn
         |> put_resp_header("connection", "keep-alive")
         |> put_resp_header("Content-Type", "text/event-stream; charset=utf-8")
         |> put_resp_header("Cache-Control", "no-cache")
         |> Plug.Conn.send_chunked(200)
-        |> sse(%{request_attrs | worker_id: worker_id})
+        |> sse(request_attrs)
 
       {:error, worker_id, reason} ->
-        error(conn, %{request_attrs | worker_id: worker_id}, reason)
+        request_attrs = Map.put(request_attrs, :worker_id, worker_id)
+        error(conn, request_attrs, reason)
     after
       Application.fetch_env!(:platform, :request_timeout) ->
         error(conn, request_attrs, :timeout)
@@ -63,16 +60,19 @@ defmodule PlatformWeb.CompletionController do
   defp sse(conn, request_attrs, text_acc \\ "") do
     receive do
       {:chunk, chunk} ->
-        with {:ok, text} <- extract_chunk_text(chunk),
-             {:ok, conn} <- Plug.Conn.chunk(conn, chunk) do
-          sse(conn, request_attrs, text_acc <> text)
-        else
+        text_acc = text_acc <> extract_text_chunk(chunk)
+
+        case Plug.Conn.chunk(conn, chunk) do
+          {:ok, conn} ->
+            sse(conn, request_attrs, text_acc)
+
           {:error, reason} ->
-            error_chunk(conn, %{request_attrs | response: text_acc}, reason)
+            error_chunk(conn, request_attrs, reason)
         end
 
       :chunk_end ->
-        success_chunk(conn, %{request_attrs | response: text_acc})
+        request_attrs = Map.put(request_attrs, :response, text_acc)
+        success_chunk(conn, request_attrs)
 
       {:error, reason} ->
         error_chunk(conn, request_attrs, reason)
@@ -85,11 +85,18 @@ defmodule PlatformWeb.CompletionController do
     end
   end
 
-  defp error_changeset(conn, changeset) do
+  defp success(conn, request_attrs, result) do
+    handle_success(request_attrs)
+
     conn
-    |> put_status(500)
-    |> put_view(json: PlatformWeb.ChangesetJSON)
-    |> render("error.json", changeset: changeset)
+    |> put_status(200)
+    |> json(result)
+  end
+
+  defp success_chunk(conn, request_attrs) do
+    handle_success(request_attrs)
+
+    conn
   end
 
   defp error(conn, request_attrs, reason) do
@@ -100,24 +107,19 @@ defmodule PlatformWeb.CompletionController do
     |> json(%{error: reason})
   end
 
-  defp error_chunk(conn, request_attrs, reason) do
+  def error_chunk(conn, request_attrs, reason) do
     handle_error(request_attrs, reason)
 
     Plug.Conn.chunk(conn, format_error(reason))
-  end
-
-  defp success(conn, request_attrs) do
-    handle_success(request_attrs)
 
     conn
-    |> put_status(200)
-    |> json(request_attrs.response)
   end
 
-  defp success_chunk(conn, request_attrs) do
-    handle_success(request_attrs)
-
+  defp error_changeset(conn, changeset) do
     conn
+    |> put_status(500)
+    |> put_view(json: PlatformWeb.ChangesetJSON)
+    |> render("error.json", changeset: changeset)
   end
 
   defp handle_error(request_attrs, reason) do
@@ -133,7 +135,12 @@ defmodule PlatformWeb.CompletionController do
   defp handle_success(request_attrs) do
     Task.start(fn ->
       n_tokens = Model.count_tokens(request_attrs.response)
-      reward = Model.calculate_reward(request_attrs.model, n_tokens)
+
+      reward =
+        Model.calculate_reward(
+          get_in(request_attrs, [:params, "model"]),
+          n_tokens
+        )
 
       request_attrs =
         request_attrs
@@ -141,31 +148,34 @@ defmodule PlatformWeb.CompletionController do
         |> Map.put(:tokens, n_tokens)
         |> Map.put(:reward, reward)
         |> Map.put(:time_end, DateTime.utc_now())
-        |> API.create_request()
 
-      requester_id = request_attrs.requester_id
       worker_id = request_attrs.worker_id
+      requester_id = request_attrs.requester_id
 
-      if requester_id != worker_id do
-        requester_topic = "transactions:#{requester_id}"
-        worker_topic = "transactions:#{worker_id}"
+      request_attrs =
+        if requester_id != worker_id do
+          {:ok, transaction} = API.transfer_credits(reward, requester_id, worker_id)
+          requester_topic = "transactions:#{requester_id}"
+          worker_topic = "transactions:#{worker_id}"
 
-        {:ok, transaction} = API.transfer_credits(reward, worker_id, requester_id)
+          Phoenix.PubSub.broadcast(
+            Platform.PubSub,
+            requester_topic,
+            {:transaction, transaction}
+          )
 
-        Phoenix.PubSub.broadcast(
-          Platform.PubSub,
-          requester_topic,
-          {:transaction, transaction}
-        )
+          Phoenix.PubSub.broadcast(
+            Platform.PubSub,
+            worker_topic,
+            {:transaction, transaction}
+          )
 
-        Phoenix.PubSub.broadcast(
-          Platform.PubSub,
-          worker_topic,
-          {:transaction, transaction}
-        )
+          Map.put(request_attrs, :transaction_id, transaction.id)
+        else
+          request_attrs
+        end
 
-        API.update_request(request_attrs, %{transaction_id: transaction.id})
-      end
+      API.create_request(request_attrs)
     end)
   end
 
@@ -192,53 +202,54 @@ defmodule PlatformWeb.CompletionController do
   #   }
   # }
 
-  defp get_in_result(result) do
-    case get_in(result, ["choices", 0, "message", "content"]) do
-      nil -> {:error, :parse}
-      result -> {:ok, result}
+  defp extract_text_result(result) do
+    try do
+      result
+      |> Map.get("choices")
+      |> List.first()
+      |> get_in(["message", "content"])
+    rescue
+      _ -> ""
     end
   end
 
   # "data: {\"id\":\"chatcmpl-668\",\"object\":\"chat.completion.chunk\",\"created\":1715114855,\"model\":\"qwen:0.5b-chat-v1.5-q4_K_M\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" of\"},\"finish_reason\":null}]}\n\n"
 
-  defp get_in_delta(result) do
-    case get_in(result, ["choices", 0, "delta", "content"]) do
-      nil -> {:error, :parse}
-      result -> {:ok, result}
-    end
-  end
-
-  defp extract_chunk_text(chunk) do
+  def extract_text_chunk(chunk) do
     chunk
     |> String.trim()
     |> String.split("data: ")
     |> Enum.reduce("", fn str, acc ->
-      case str do
-        "[DONE]" ->
-          acc
+      if str == "[DONE]" do
+        acc
+      else
+        str_formatted =
+          str
+          |> String.trim()
+          |> (fn s -> if String.starts_with?(s, "{\""), do: s, else: "{\"#{s}" end).()
+          |> (fn s -> if String.ends_with?(s, "}"), do: s, else: "#{s}}" end).()
 
-        result ->
-          encoded =
-            result
-            |> String.trim()
-            |> format_bracket_start()
-            |> format_bracket_end()
+        case Jason.decode(str_formatted) do
+          {:ok, decoded} ->
+            text =
+              try do
+                decoded
+                |> Map.get("choices", [])
+                |> List.first()
+                |> get_in(["delta", "content"])
+              rescue
+                _ -> ""
+              end
 
-          with {:ok, decoded} <- Jason.decode(encoded),
-               {:ok, text} <- get_in_delta(decoded) do
             acc <> text
-          else
-            _ ->
-              acc
-          end
+
+          {:error, _} ->
+            acc
+        end
       end
     end)
   end
 
-  defp format_bracket_start(text),
-    do: if(String.starts_with?(text, "{\""), do: text, else: "{\"#{text}}")
-
-  defp format_bracket_end(text), do: if(String.ends_with?(text, "}"), do: text, else: "#{text}}")
   defp format_error_prefix(), do: "ERROR: "
 
   defp format_error(reason) when is_atom(reason),

@@ -21,18 +21,19 @@ user1_attrs = %{
   password: "testtesttest",
   rate_limit: 1_000
 }
-
-{:ok, user1} = Accounts.register_user(user1_attrs)
-{:ok, _token1} = Accounts.assign_user_token(user1, token1)
-
-{:ok, _transaction1} = API.transfer_credits(1_000_000, user1.id)
-
 user2_attrs = %{
   user1_attrs
   | email: "test2@test.com"
 }
 
-{:ok, user2} = Accounts.register_user(user2_attrs)
-{:ok, _token2} = Accounts.assign_user_token(user2, token2)
+if is_nil(Accounts.get_user_by_email(user1_attrs.email)) do
+  {:ok, user1} = Accounts.register_user(user1_attrs)
+  Accounts.assign_user_token(user1, token1)
+  API.transfer_credits(1_000_000, user1.id)
+end
 
-{:ok, _transaction2} = API.transfer_credits(100_000, user2.id)
+if is_nil(Accounts.get_user_by_email(user2_attrs.email)) do
+  {:ok, user2} = Accounts.register_user(user2_attrs)
+  Accounts.assign_user_token(user2, token2)
+  API.transfer_credits(100_000, user2.id)
+end

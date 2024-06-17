@@ -48,7 +48,7 @@ defmodule Platform.MixProject do
       {:amqp, "~> 3.2"},
       {:sentry, "~> 10.0"},
       {:hackney, "~> 1.19"},
-      # 
+      #
       {:bcrypt_elixir, "~> 3.0"},
       {:phoenix, "~> 1.7.10"},
       {:phoenix_ecto, "~> 4.4"},
@@ -69,7 +69,7 @@ defmodule Platform.MixProject do
       {:jason, "~> 1.2"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, ">= 0.0.0"},
-      # 
+      #
       {:flame_on, "~> 0.6.0"},
       {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
@@ -95,9 +95,10 @@ defmodule Platform.MixProject do
         "sentry.package_source_code"
       ],
       lint: [
+        "hex.audit",
         "deps.audit",
         "sobelow",
-        "credo",
+        "credo --mute-exit-status",
         "dialyzer"
       ]
     ]

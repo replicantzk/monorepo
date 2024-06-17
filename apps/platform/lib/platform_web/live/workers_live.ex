@@ -12,8 +12,8 @@ defmodule PlatformWeb.WorkersLive do
       <%= for model <- Model.supported_models_keys() do %>
         <% workers = Map.get(@workers_by_model, model) %>
         <div class="node-group mb-4">
-          <h3 class="text-lg font-bold mb-2"><%= model %></h3>
           <%= if workers do %>
+            <h3 class="text-lg font-bold mb-2"><%= model %>(<%= length(workers) %>)</h3>
             <div class="flex flex-wrap">
               <%= for {id, status, node} <- workers do %>
                 <div
@@ -23,6 +23,8 @@ defmodule PlatformWeb.WorkersLive do
                 </div>
               <% end %>
             </div>
+          <% else %>
+            <h3 class="text-lg font-bold mb-2"><%= model %></h3>
           <% end %>
         </div>
       <% end %>
@@ -30,9 +32,9 @@ defmodule PlatformWeb.WorkersLive do
     """
   end
 
-  defp status_color(:join), do: "bg-yellow-500"
-  defp status_color(:lock), do: "bg-red-500"
-  defp status_color(:free), do: "bg-green-500"
+  defp status_base(), do: ""
+  defp status_color(:free), do: status_base() <> "bg-green-400"
+  defp status_color(:lock), do: status_base() <> "bg-red-400"
 
   @impl true
   def mount(_params, _session, socket) do
@@ -41,26 +43,27 @@ defmodule PlatformWeb.WorkersLive do
       :net_kernel.monitor_nodes(true)
     end
 
-    workers_ets = :ets.tab2list(WorkerBalancerCluster.table_name())
+    workers_ets =
+      WorkerBalancer.table_name()
+      |> :ets.tab2list()
+      |> Enum.map(fn {id, model, status} ->
+        {id, model, status, Node.self()}
+      end)
+    workers_cluster_ets = :ets.tab2list(WorkerBalancerCluster.table_name())
+    workers_combined_ets = workers_ets ++ workers_cluster_ets
 
     workers =
-      Enum.reduce(workers_ets, %{}, fn {id, model, status, node}, acc ->
-        Map.update(acc, node, [{id, model, status}], fn models ->
-          [{id, model, status}] ++ models
-        end)
-      end)
-
-    workers_by_model =
-      Enum.reduce(workers_ets, %{}, fn {id, model, status, node}, acc ->
-        Map.update(acc, model, [{id, status, node}], fn models ->
-          [{id, status, node}] ++ models
+      Enum.reduce(workers_combined_ets, %{}, fn {id, model, status, node}, acc ->
+        Map.update(acc, node, [{id, model, status, node}], fn models ->
+          [{id, model, status, node}] ++ models
         end)
       end)
 
     {:ok,
      socket
      |> assign(workers: workers)
-     |> assign(workers_by_model: workers_by_model)}
+     |> assign(workers_local: workers)
+     |> assign(workers_by_model: get_workers_by_model(workers))}
   end
 
   @impl true
@@ -77,26 +80,24 @@ defmodule PlatformWeb.WorkersLive do
   end
 
   @impl true
-  def handle_info({:agg, workers, node}, socket) do
-    new_workers =
-      Map.put(
-        socket.assigns.workers,
-        node,
-        workers
-      )
-
-    workers_by_model =
-      Enum.reduce(new_workers, %{}, fn {node, worker_list}, acc ->
-        Enum.reduce(worker_list, acc, fn {id, model, status}, acc ->
-          Map.update(acc, model, [{id, status, node}], fn models ->
-            [{id, status, node}] ++ models
-          end)
-        end)
-      end)
+  def handle_info({:agg, node_workers, node}, socket) do
+    workers =
+      socket.assigns.workers
+      |> Map.put(node, node_workers)
 
     {:noreply,
      socket
-     |> assign(workers: new_workers)
-     |> assign(workers_by_model: workers_by_model)}
+     |> assign(workers: workers)
+     |> assign(workers_by_model: get_workers_by_model(workers))}
+  end
+
+  defp get_workers_by_model(workers) do
+    Enum.reduce(workers, %{}, fn {_node, worker_list}, acc ->
+      Enum.reduce(worker_list, acc, fn {id, model, status, node}, acc ->
+        Map.update(acc, model, [{id, model, status, node}], fn models ->
+          [{id, status, node}] ++ models
+        end)
+      end)
+    end)
   end
 end

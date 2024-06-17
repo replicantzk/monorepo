@@ -4,7 +4,7 @@ defmodule Platform.WorkerBalancerCluster do
   alias Phoenix.PubSub
   alias Platform.WorkerBalancer
 
-  @table_name :worker_balancer_cluster
+  @table_name :balancer_cluster
 
   def table_name(), do: @table_name
 
@@ -65,19 +65,9 @@ defmodule Platform.WorkerBalancerCluster do
 
   @impl true
   def handle_info({:agg, workers, node}, state) do
-    match_spec =
-      fun do
-        {_, _, _, ^node} -> true
-      end
-
-    :ets.select_delete(@table_name, match_spec)
-
-    workers =
-      Enum.map(workers, fn {id, model, status} ->
-        {id, model, status, node}
-      end)
-
-    :ets.insert(@table_name, workers)
+    if node != Node.self() do
+      :ets.insert(@table_name, workers)
+    end
 
     {:noreply, state}
   end

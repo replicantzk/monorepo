@@ -1,17 +1,16 @@
 import Config
 
+convert_var_to_type = fn
+  var, :int -> String.to_integer(var)
+  var, :float -> String.to_float(var)
+  var, :bool -> var == "true"
+  var, :string -> var
+end
+
 get_env = fn name, default, type ->
   case System.get_env(name) do
-    nil ->
-      default
-
-    var ->
-      case type do
-        :int -> String.to_integer(var)
-        :float -> String.to_float(var)
-        :bool -> var == "true"
-        :string -> var
-      end
+    nil -> default
+    var -> convert_var_to_type.(var, type)
   end
 end
 

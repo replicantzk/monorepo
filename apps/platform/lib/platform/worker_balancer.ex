@@ -4,22 +4,14 @@ defmodule Platform.WorkerBalancer do
   alias Phoenix.PubSub
   alias Platform.WorkerBalancerCluster
 
-  @table_name :worker_balancer
-  @pubsub_topic "worker_update"
+  @table_name :balancer
 
-  def pubsub_topic(), do: @pubsub_topic
+  def table_name(), do: @table_name
+
+  def pubsub_topic(), do: "balancer_update"
 
   def dump() do
     :ets.tab2list(@table_name)
-  end
-
-  def free_all() do
-    :ets.insert(
-      @table_name,
-      Enum.map(:ets.tab2list(@table_name), fn {id, _model, _status} ->
-        {id, nil, :free}
-      end)
-    )
   end
 
   defp update_status(id, status) do
@@ -98,14 +90,21 @@ defmodule Platform.WorkerBalancer do
     :ok
   end
 
-  def handle_info(:agg, _state) do
-    workers = :ets.tab2list(@table_name)
+  def handle_info(:agg, state) do
+    workers =
+      @table_name
+      |> :ets.tab2list()
+      |> Enum.map(fn {id, model, status} ->
+        {id, model, status, Node.self()}
+      end)
 
-    PubSub.broadcast(
-      Platform.PubSub,
-      pubsub_topic(),
-      {:agg, workers, Node.self()}
-    )
+    if workers != state do
+      PubSub.broadcast(
+        Platform.PubSub,
+        pubsub_topic(),
+        {:agg, workers, Node.self()}
+      )
+    end
 
     Process.send_after(
       self(),

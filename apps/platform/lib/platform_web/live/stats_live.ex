@@ -43,9 +43,7 @@ defmodule PlatformWeb.StatsLive do
       {"Rewards all time", render_bar_chart(rewards_all_time(), "User", "Rewards")}
     ]
 
-    {:ok,
-     socket
-     |> assign(:plots, plots)}
+    {:ok, assign(socket, :plots, plots)}
   end
 
   def requests_recent(days) do
@@ -53,7 +51,7 @@ defmodule PlatformWeb.StatsLive do
       r in Request,
       where: r.inserted_at >= ago(^days, "day"),
       group_by: [fragment("date_trunc('day', ?)", r.inserted_at)],
-      select: %{day: fragment("date_trunc('day', ?)", r.inserted_at), count: count(r.id)}
+      select: %{day: fragment("date_trunc('day', ?)", r.inserted_at), count: count(r.uuid)}
     )
     |> Repo.all()
     |> Enum.map(fn %{day: day, count: count} ->

@@ -7,12 +7,15 @@ defmodule Platform.AMQPPublisher do
   @amqp_exchange "exchange_inference"
 
   def publish(payload) do
-    key =
-      Application.fetch_env!(:platform, :amqp_publisher_partitions)
-      |> :rand.uniform()
+    n_partitions = Application.fetch_env!(:platform, :amqp_pub_partitions)
+    key = :rand.uniform(n_partitions)
 
     GenServer.call(
-      {:via, PartitionSupervisor, {PartitionSupervisorAMQPPublisher, key}},
+      {
+        :via,
+        PartitionSupervisor,
+        {PartitionSupervisorAMQPPublisher, key}
+      },
       {:publish, payload}
     )
   end
@@ -34,16 +37,19 @@ defmodule Platform.AMQPPublisher do
   end
 
   def publish_queue(chan, request) do
-    model = Map.fetch!(request.params, "model")
-
-    case AMQP.Basic.publish(
-           chan,
-           @amqp_exchange,
-           model,
-           Jason.encode!(request),
-           mandatory: true
-         ) do
-      :ok -> :ok
+    with {:ok, model} <- Map.fetch(request.params, "model"),
+         {:ok, payload} <- Jason.encode(request),
+         :ok <-
+           AMQP.Basic.publish(
+             chan,
+             @amqp_exchange,
+             model,
+             payload,
+             mandatory: true
+           ) do
+      :ok
+    else
+      :error -> {:error, :model_not_found}
       {:error, reason} -> {:error, reason}
     end
   end

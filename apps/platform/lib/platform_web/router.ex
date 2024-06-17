@@ -16,8 +16,8 @@ defmodule PlatformWeb.Router do
   pipeline :api do
     plug :accepts, ["json"]
     plug PlatformWeb.Plugs.TokenChecker
-    plug PlatformWeb.Plugs.RateLimiter
-    plug PlatformWeb.Plugs.BalanceChecker
+    # plug PlatformWeb.Plugs.RateLimiter
+    # plug PlatformWeb.Plugs.BalanceChecker
   end
 
   scope "/", PlatformWeb do

@@ -9,6 +9,8 @@ defmodule Platform.API do
   alias Platform.API.Transaction
   alias Platform.Repo
 
+  @system_email "platform@replicantzk.com"
+
   @doc """
   Returns the list of tokens.
 
@@ -274,22 +276,19 @@ defmodule Platform.API do
 
     Repo.all(query)
   end
-
-  def create_system_credit_account() do
-    user_attrs = %{
-      email: Application.fetch_env!(:platform, :credits_system_email),
-      password: Ecto.UUID.generate()
-    }
-
-    Accounts.register_user(user_attrs)
-  end
-
+  
   def get_system_credit_account() do
-    email = Application.fetch_env!(:platform, :credits_system_email)
+    case Accounts.get_user_by_email(@system_email) do
+      nil ->
+        account_attrs = %{
+          email: @system_email,
+          password: Ecto.UUID.generate()
+        }
 
-    case Accounts.get_user_by_email(email) do
-      nil -> create_system_credit_account()
-      user -> {:ok, user}
+        Accounts.register_user(account_attrs)
+
+      user ->
+        {:ok, user}
     end
   end
 
@@ -318,6 +317,4 @@ defmodule Platform.API do
 
     create_transaction(transaction_attrs)
   end
-
-  def credits_system_email(), do: Application.fetch_env!(:platform, :credits_system_email)
 end

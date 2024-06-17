@@ -1,8 +1,11 @@
-priv/plts/
 .elixir_ls/
+.history/
 .db/
 .mq/
-replicant.conf
+priv/plts/
+.lb_conn
+.env
+*.sublime-*
 
 # The directory Mix will write compiled artifacts to.
 /_build/
