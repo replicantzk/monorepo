@@ -16,7 +16,7 @@ defmodule Platform.API.Transaction do
   @doc false
   def changeset(transaction, attrs) do
     transaction
-    |> cast(attrs, [:from, :to, :amount])
+    |> cast(attrs, [:from, :to, :amount, :request_id])
     |> validate_required([:from, :to, :amount])
   end
 end

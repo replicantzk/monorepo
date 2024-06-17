@@ -48,7 +48,7 @@ defmodule Platform.AMQPConsumer do
       ) do
     with {:ok, worker_id} <- WorkerBalancer.get_worker(model),
          {:ok, request} <- Jason.decode(payload),
-         {:ok, request_id} <- Map.fetch(request, "uuid"),
+         {:ok, request_id} <- Map.fetch(request, "id"),
          {:ok, params} <- Map.fetch(request, "params"),
          :ok <- Basic.ack(chan, delivery_tag) do
       push(worker_id, request_id, params)

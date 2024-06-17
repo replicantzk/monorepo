@@ -3,3 +3,61 @@
 @import "tailwindcss/utilities";
 
 /* This file is for your main application CSS */
+
+/* Styling for tick line */
+.exc-tick {
+    stroke: grey;
+  }
+  
+  /* Styling for tick text */
+  .exc-tick text {
+    fill: grey;
+    stroke: none;
+  }
+  
+  /* Styling for axis line */
+  .exc-domain {
+    stroke:  rgb(207, 207, 207);
+  }
+  
+  /* Styling for grid line */
+  .exc-grid {
+    stroke: lightgrey;
+  }
+  
+  /* Styling for outline of colours in legend */
+  .exc-legend {
+    stroke: black;
+  }
+  
+  /* Styling for text of colours in legend */
+  .exc-legend text {
+    fill: grey;
+    font-size: 0.8rem;
+    stroke: none;
+  }
+  
+  /* Styling for title & subtitle of any plot */
+  .exc-title {
+    fill: darkslategray;
+    font-size: 2.3rem;
+    stroke: none;
+  }
+  
+  .exc-subtitle {
+    fill: darkgrey;
+    font-size: 1.0rem;
+    stroke: none;
+  }
+  
+  /* Styling for label printed inside a bar on a barchart */
+  .exc-barlabel-in {
+    fill: black;
+    font-size: 0.7rem;
+  }
+  
+  /* Styling for label printed outside of a bar (e.g. if bar is too small) */
+  .exc-barlabel-out {
+    fill: black;
+    font-size: 0.7rem;
+  }

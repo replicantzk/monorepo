@@ -276,7 +276,7 @@ defmodule Platform.API do
 
     Repo.all(query)
   end
-  
+
   def get_system_credit_account() do
     case Accounts.get_user_by_email(@system_email) do
       nil ->

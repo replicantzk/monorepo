@@ -49,6 +49,7 @@ defmodule PlatformWeb.WorkersLive do
       |> Enum.map(fn {id, model, status} ->
         {id, model, status, Node.self()}
       end)
+
     workers_cluster_ets = :ets.tab2list(WorkerBalancerCluster.table_name())
     workers_combined_ets = workers_ets ++ workers_cluster_ets
 

@@ -21,6 +21,7 @@ user1_attrs = %{
   password: "testtesttest",
   rate_limit: 1_000
 }
+
 user2_attrs = %{
   user1_attrs
   | email: "test2@test.com"

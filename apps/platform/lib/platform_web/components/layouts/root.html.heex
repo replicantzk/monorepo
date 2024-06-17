@@ -13,78 +13,46 @@
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>
   </head>
-  <body class="bg-white antialiased">
-    <div class="flex flex-row justify-end p-2">
-      <ul class="relative z-10 flex items-center gap-4 px-4 sm:px-6 lg:px-8 justify-end">
-        <%= if @current_user do %>
-          <li class="text-[0.8125rem] leading-6 text-zinc-900">
-            <%= @current_user.email %>
-          </li>
-        <% end %>
+  <body class="antialiased">
+    <div class="flex flex-row justify-between p-2 px-4">
+      <.link href={~p"/"}>
+        <img src={~p"/images/logo.png"} alt="logo" class="h-16" />
+      </.link>
+      <ul class="relative z-10 flex items-center gap-4">
         <li>
-          <.link
-            href={~p"/"}
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-          >
-            Home
-          </.link>
-        </li>
-        <li>
-          <.link
-            href={~p"/stats"}
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-          >
-            Stats
-          </.link>
-        </li>
-        <li>
-          <.link
-            href={~p"/workers"}
-            class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-          >
+          <.link href={~p"/workers"} class="btn btn-primary">
             Workers
+          </.link>
+        </li>
+        <li>
+          <.link href={~p"/stats"} class="btn btn-primary">
+            Stats
           </.link>
         </li>
         <%= if @current_user do %>
           <li>
-            <.link
-              href={~p"/credits"}
-              class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-            >
+            <.link href={~p"/credits"} class="btn btn-primary">
               Credits
             </.link>
           </li>
           <li>
-            <.link
-              href={~p"/users/settings"}
-              class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-            >
+            <.link href={~p"/users/settings"} class="btn btn-primary">
               Settings
             </.link>
           </li>
           <li>
-            <.link
-              href={~p"/users/log_out"}
-              method="delete"
-              class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-            >
+            <.link href={~p"/users/log_out"} method="delete" class="btn btn-primary">
               Log out
             </.link>
           </li>
         <% else %>
           <li>
-            <.link
-              href={~p"/users/register"}
-              class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-            >
+            <.link href={~p"/users/register"} class="btn btn-primary">
               Register
             </.link>
           </li>
           <li>
-            <.link
-              href={~p"/users/log_in"}
-              class="text-[0.8125rem] leading-6 text-zinc-900 font-semibold hover:text-zinc-700"
-            >
+            <.link href={~p"/users/log_in"} class="btn btn-primary">
               Log in
             </.link>
           </li>
