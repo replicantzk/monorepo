@@ -12,7 +12,7 @@ defmodule Platform.Accounts.User do
     field :rate_limit, :integer, default: 10
 
     has_one :tokens, Token
-    has_many :requests, Request
+    has_many :requests, Request, foreign_key: :requester_id
     has_many :worker_requests, Request, foreign_key: :worker_id
 
     timestamps(type: :utc_datetime)

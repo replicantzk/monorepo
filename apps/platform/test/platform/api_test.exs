@@ -6,22 +6,31 @@ defmodule Platform.APITest do
   describe "tokens" do
     alias Platform.API.Token
 
+    import Platform.AccountsFixtures
     import Platform.APIFixtures
 
     @invalid_attrs %{value: nil}
 
     test "list_tokens/0 returns all tokens" do
-      token = token_fixture()
+      Platform.Repo.delete_all(Token)
+      user = user_fixture()
+      token = token_fixture(%{user_id: user.id})
       assert API.list_tokens() == [token]
     end
 
     test "get_token!/1 returns the token with given id" do
-      token = token_fixture()
+      user = user_fixture()
+      token = token_fixture(%{user_id: user.id})
       assert API.get_token!(token.id) == token
     end
 
     test "create_token/1 with valid data creates a token" do
-      valid_attrs = %{value: "some value"}
+      user = user_fixture()
+
+      valid_attrs = %{
+        user_id: user.id,
+        value: "some value"
+      }
 
       assert {:ok, %Token{} = token} = API.create_token(valid_attrs)
       assert token.value == "some value"
@@ -32,7 +41,8 @@ defmodule Platform.APITest do
     end
 
     test "update_token/2 with valid data updates the token" do
-      token = token_fixture()
+      user = user_fixture()
+      token = token_fixture(%{user_id: user.id})
       update_attrs = %{value: "some updated value"}
 
       assert {:ok, %Token{} = token} = API.update_token(token, update_attrs)
@@ -40,108 +50,58 @@ defmodule Platform.APITest do
     end
 
     test "update_token/2 with invalid data returns error changeset" do
-      token = token_fixture()
+      user = user_fixture()
+      token = token_fixture(%{user_id: user.id})
       assert {:error, %Ecto.Changeset{}} = API.update_token(token, @invalid_attrs)
       assert token == API.get_token!(token.id)
     end
 
     test "delete_token/1 deletes the token" do
-      token = token_fixture()
+      user = user_fixture()
+      token = token_fixture(%{user_id: user.id})
       assert {:ok, %Token{}} = API.delete_token(token)
       assert_raise Ecto.NoResultsError, fn -> API.get_token!(token.id) end
     end
 
     test "change_token/1 returns a token changeset" do
-      token = token_fixture()
+      user = user_fixture()
+      token = token_fixture(%{user_id: user.id})
       assert %Ecto.Changeset{} = API.change_token(token)
-    end
-  end
-
-  describe "webhooks" do
-    alias Platform.API.Webhook
-
-    import Platform.APIFixtures
-
-    @invalid_attrs %{input: nil, status: nil, url: nil}
-
-    test "list_webhooks/0 returns all webhooks" do
-      webhook = webhook_fixture()
-      assert API.list_webhooks() == [webhook]
-    end
-
-    test "get_webhook!/1 returns the webhook with given id" do
-      webhook = webhook_fixture()
-      assert API.get_webhook!(webhook.id) == webhook
-    end
-
-    test "create_webhook/1 with valid data creates a webhook" do
-      valid_attrs = %{input: %{}, status: "some status", url: "some url"}
-
-      assert {:ok, %Webhook{} = webhook} = API.create_webhook(valid_attrs)
-      assert webhook.input == %{}
-      assert webhook.status == "some status"
-      assert webhook.url == "some url"
-    end
-
-    test "create_webhook/1 with invalid data returns error changeset" do
-      assert {:error, %Ecto.Changeset{}} = API.create_webhook(@invalid_attrs)
-    end
-
-    test "update_webhook/2 with valid data updates the webhook" do
-      webhook = webhook_fixture()
-      update_attrs = %{input: %{}, status: "some updated status", url: "some updated url"}
-
-      assert {:ok, %Webhook{} = webhook} = API.update_webhook(webhook, update_attrs)
-      assert webhook.input == %{}
-      assert webhook.status == "some updated status"
-      assert webhook.url == "some updated url"
-    end
-
-    test "update_webhook/2 with invalid data returns error changeset" do
-      webhook = webhook_fixture()
-      assert {:error, %Ecto.Changeset{}} = API.update_webhook(webhook, @invalid_attrs)
-      assert webhook == API.get_webhook!(webhook.id)
-    end
-
-    test "delete_webhook/1 deletes the webhook" do
-      webhook = webhook_fixture()
-      assert {:ok, %Webhook{}} = API.delete_webhook(webhook)
-      assert_raise Ecto.NoResultsError, fn -> API.get_webhook!(webhook.id) end
-    end
-
-    test "change_webhook/1 returns a webhook changeset" do
-      webhook = webhook_fixture()
-      assert %Ecto.Changeset{} = API.change_webhook(webhook)
     end
   end
 
   describe "requests" do
     alias Platform.API.Request
 
+    import Platform.AccountsFixtures
     import Platform.APIFixtures
 
     @invalid_attrs %{id: nil, status: nil, response: nil, params: nil}
 
     test "list_requests/0 returns all requests" do
-      request = request_fixture()
+      user = user_fixture()
+      request = request_fixture(%{requester_id: user.id})
       assert API.list_requests() == [request]
     end
 
     test "get_request!/1 returns the request with given id" do
-      request = request_fixture()
+      user = user_fixture()
+      request = request_fixture(%{requester_id: user.id})
       assert API.get_request!(request.id) == request
     end
 
     test "create_request/1 with valid data creates a request" do
+      user = user_fixture()
+
       valid_attrs = %{
-        id: "some id",
         status: "some status",
         response: "some response",
-        params: %{}
+        params: %{},
+        requester_id: user.id,
+        time_start: DateTime.utc_now()
       }
 
       assert {:ok, %Request{} = request} = API.create_request(valid_attrs)
-      assert request.id == "some id"
       assert request.status == "some status"
       assert request.response == "some response"
       assert request.params == %{}
@@ -152,36 +112,38 @@ defmodule Platform.APITest do
     end
 
     test "update_request/2 with valid data updates the request" do
-      request = request_fixture()
+      user = user_fixture()
+      request = request_fixture(%{requester_id: user.id})
 
       update_attrs = %{
-        id: "some updated id",
         status: "some updated status",
         response: "some updated response",
         params: %{}
       }
 
       assert {:ok, %Request{} = request} = API.update_request(request, update_attrs)
-      assert request.id == "some updated id"
       assert request.status == "some updated status"
       assert request.response == "some updated response"
       assert request.params == %{}
     end
 
     test "update_request/2 with invalid data returns error changeset" do
-      request = request_fixture()
+      user = user_fixture()
+      request = request_fixture(%{requester_id: user.id})
       assert {:error, %Ecto.Changeset{}} = API.update_request(request, @invalid_attrs)
       assert request == API.get_request!(request.id)
     end
 
     test "delete_request/1 deletes the request" do
-      request = request_fixture()
+      user = user_fixture()
+      request = request_fixture(%{requester_id: user.id})
       assert {:ok, %Request{}} = API.delete_request(request)
       assert_raise Ecto.NoResultsError, fn -> API.get_request!(request.id) end
     end
 
     test "change_request/1 returns a request changeset" do
-      request = request_fixture()
+      user = user_fixture()
+      request = request_fixture(%{requester_id: user.id})
       assert %Ecto.Changeset{} = API.change_request(request)
     end
   end

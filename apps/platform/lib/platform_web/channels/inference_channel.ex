@@ -42,15 +42,11 @@ defmodule PlatformWeb.InferenceChannel do
        ) do
     with true <- ConnectionLimiter.check({ip, key}),
          {:ok, user} <- API.get_user_by_token(key),
-         generated_worker_id <- generate_worker_id(key, salt),
-         true <- worker_id == generated_worker_id do
+         true <- worker_id == generate_worker_id(key, salt) do
       {:ok, user}
     else
-      {:error, reason} ->
-        {:error, reason}
-
       _ ->
-        {:error, :unknown}
+        {:error, :unauthorized}
     end
   end
 

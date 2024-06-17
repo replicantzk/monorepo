@@ -39,7 +39,7 @@ docker run --rm -it \
     --mount type=bind,source="$(pwd)"/.models,target=/app/.models \
     --env WORKER_MODEL="$WORKER_MODEL" \
     --env WORKER_API_KEY="$WORKER_API_KEY" \
-    ghcr.io/replicantzk/worker-cli:latest
+    ghcr.io/replicantzk/worker:latest
 ```
 
-Ensure that you have the `WORKER_MODEL` and `WORKER_API_KEY` environment variables set correctly. To save time redownloading models, you should always mount the same directory (in this example, `$(pwd)/.models`) to the container as shown above.
+Ensure that you have at least the `WORKER_MODEL` and `WORKER_API_KEY` environment variables set. To save time redownloading models, you should always mount the same directory (in this example, `$(pwd)/.models`) to the container as shown above.

@@ -16,8 +16,8 @@ defmodule Platform.API.Request do
     field :time_start, :utc_datetime
     field :time_end, :utc_datetime
 
-    belongs_to :requester, User
-    has_one :worker, User
+    belongs_to :requester, User, foreign_key: :requester_id
+    belongs_to :worker, User, foreign_key: :worker_id
     has_one :transaction, Transaction
 
     timestamps(type: :utc_datetime)
