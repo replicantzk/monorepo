@@ -7,8 +7,6 @@
 # General application configuration
 import Config
 
-config :platform, env: :dev
-
 config :platform,
   ecto_repos: [Platform.Repo],
   generators: [timestamp_type: :utc_datetime]

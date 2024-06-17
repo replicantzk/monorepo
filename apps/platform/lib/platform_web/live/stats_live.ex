@@ -43,9 +43,7 @@ defmodule PlatformWeb.StatsLive do
       {"Rewards all time", render_bar_chart(rewards_all_time(), "User", "Rewards")}
     ]
 
-    {:ok,
-     socket
-     |> assign(:plots, plots)}
+    {:ok, assign(socket, :plots, plots)}
   end
 
   def requests_recent(days) do

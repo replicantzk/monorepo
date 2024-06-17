@@ -4,7 +4,7 @@ defmodule Platform.WorkerBalancerCluster do
   alias Phoenix.PubSub
   alias Platform.WorkerBalancer
 
-  @table_name :worker_balancer_cluster
+  @table_name :balancer_cluster
 
   def table_name(), do: @table_name
 

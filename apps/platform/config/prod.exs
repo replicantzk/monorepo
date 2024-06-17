@@ -1,8 +1,5 @@
 import Config
 
-config :platform,
-  env: :prod
-
 config :sentry,
   dsn: System.get_env("SENTRY_DSN"),
   environment_name: Mix.env(),

@@ -4,10 +4,9 @@ defmodule Platform.WorkerBalancer do
   alias Phoenix.PubSub
   alias Platform.WorkerBalancerCluster
 
-  @table_name :worker_balancer
-  @pubsub_topic "worker_update"
+  @table_name :balancer
 
-  def pubsub_topic(), do: @pubsub_topic
+  def pubsub_topic(), do: "balancer_update"
 
   def dump() do
     :ets.tab2list(@table_name)

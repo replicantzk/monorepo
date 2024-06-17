@@ -28,13 +28,13 @@ defmodule PlatformWeb.CreditsLive do
       <h2 class="text-xl font-semibold mb-2">Transfer</h2>
       <p>Required minimum transfer: <%= min_transfer() %></p>
       <form phx-submit="transfer" class="flex flex-row gap-2">
+        <input type="email" name="to" placeholder="To" class="input input-bordered w-full max-w-xs" />
         <input
           type="number"
           name="amount"
           placeholder="Amount"
           class="input input-bordered w-full max-w-xs"
         />
-        <input type="email" name="to" placeholder="To" class="input input-bordered w-full max-w-xs" />
         <.button type="submit">Transfer</.button>
       </form>
       <h2 class="text-xl font-semibold mb-2">Transactions</h2>
@@ -80,8 +80,8 @@ defmodule PlatformWeb.CreditsLive do
     end
 
     min_credits = Application.fetch_env!(:platform, :credits_min_balance)
-    balance = API.get_credits_balance(current_user)
-    transactions = API.get_transactions(current_user, limit: @transactions_limit)
+    balance = API.get_credits_balance(current_user.id)
+    transactions = API.get_transactions(current_user.id, limit: @transactions_limit)
 
     {:ok,
      socket
@@ -120,7 +120,7 @@ defmodule PlatformWeb.CreditsLive do
           assign(socket, error: :insufficient_funds)
 
         true ->
-          case API.transfer_credits(amount, user_to, user_from) do
+          case API.transfer_credits(amount, user_to.id, user_from.id) do
             {:ok, transaction} ->
               new_transactions =
                 Enum.take([transaction | socket.assigns.transactions], @transactions_limit)

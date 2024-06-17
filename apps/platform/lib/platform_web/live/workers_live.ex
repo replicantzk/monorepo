@@ -32,8 +32,8 @@ defmodule PlatformWeb.WorkersLive do
     """
   end
 
-  defp status_color(:free), do: "bg-green-400"
-  defp status_color(:lock), do: "bg-orange-400"
+  defp status_color(:free), do: "bg-green-600"
+  defp status_color(:lock), do: "bg-red-600"
 
   @impl true
   def mount(_params, _session, socket) do

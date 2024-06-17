@@ -36,11 +36,7 @@ defmodule Platform.API.Request do
       :time_start,
       :time_end,
       :requester_id
-      # :worker_id
     ])
-    # |> cast_assoc(:requester)
-    # |> cast_assoc(:worker)
-    # |> cast_assoc(:transaction)
     |> validate_required([:params, :requester_id, :time_start])
   end
 end

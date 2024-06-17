@@ -9,6 +9,8 @@ defmodule Platform.API do
   alias Platform.API.Transaction
   alias Platform.Repo
 
+  @system_email "platform@replicantzk.com"
+
   @doc """
   Returns the list of tokens.
 
@@ -244,30 +246,30 @@ defmodule Platform.API do
     Transaction.changeset(transaction, attrs)
   end
 
-  def get_credits_balance(user) do
+  def get_credits_balance(user_id) do
     debits =
       Repo.one(
         from t in Transaction,
-          where: t.to == ^user.id,
+          where: t.to == ^user_id,
           select: sum(t.amount)
       ) || 0
 
     credits =
       Repo.one(
         from t in Transaction,
-          where: t.from == ^user.id,
+          where: t.from == ^user_id,
           select: sum(t.amount)
       ) || 0
 
     debits - credits
   end
 
-  def get_transactions(user, opts \\ []) do
+  def get_transactions(user_id, opts \\ []) do
     limit = Keyword.get(opts, :limit)
 
     query =
       from t in Transaction,
-        where: t.from == ^user.id or t.to == ^user.id,
+        where: t.from == ^user_id or t.to == ^user_id,
         order_by: [desc: t.inserted_at]
 
     query = if limit, do: limit(query, ^limit), else: query
@@ -275,47 +277,44 @@ defmodule Platform.API do
     Repo.all(query)
   end
 
-  def create_system_credit_account() do
-    Accounts.register_user(%{
-      email: Application.fetch_env!(:platform, :credits_system_email),
-      password: Ecto.UUID.generate()
-    })
-  end
-
   def get_system_credit_account() do
-    email = Application.fetch_env!(:platform, :credits_system_email)
+    case Accounts.get_user_by_email(@system_email) do
+      nil ->
+        account_attrs = %{
+          email: @system_email,
+          password: Ecto.UUID.generate()
+        }
 
-    case Accounts.get_user_by_email(email) do
-      nil -> create_system_credit_account()
-      user -> {:ok, user}
+        Accounts.register_user(account_attrs)
+
+      user ->
+        {:ok, user}
     end
   end
 
-  def transfer_credits(amount, user_to, user_from) do
+  def transfer_credits(amount, user_to_id, user_from_id) do
     transaction_attrs = %{
-      from: user_from.id,
-      to: user_to.id,
+      from: user_from_id,
+      to: user_to_id,
       amount: amount
     }
 
-    if get_credits_balance(user_from) < amount do
+    if get_credits_balance(user_from_id) < amount do
       {:error, :insufficient_funds}
     else
       create_transaction(transaction_attrs)
     end
   end
 
-  def transfer_credits(amount, user_to) do
+  def transfer_credits(amount, user_to_id) do
     {:ok, user_from} = get_system_credit_account()
 
     transaction_attrs = %{
       from: user_from.id,
-      to: user_to.id,
+      to: user_to_id,
       amount: amount
     }
 
     create_transaction(transaction_attrs)
   end
-
-  def credits_system_email(), do: Application.fetch_env!(:platform, :credits_system_email)
 end

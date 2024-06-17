@@ -2,6 +2,8 @@ defmodule PlatformWeb.Plugs.TokenChecker do
   import Plug.Conn
   alias Platform.API
 
+  def cache_name(), do: :token_checker
+
   def init(opts), do: opts
 
   def call(conn, _opts) do
@@ -10,7 +12,7 @@ defmodule PlatformWeb.Plugs.TokenChecker do
   end
 
   defp validate_header(conn, ["Bearer " <> token]) do
-    case Cachex.fetch(:tokens, token, &fallback/1) do
+    case Cachex.fetch(cache_name(), token, &fallback/1) do
       {result, user} when result in [:ok, :commit] ->
         assign(conn, :current_user, user)
 
