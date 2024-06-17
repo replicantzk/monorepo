@@ -13,8 +13,6 @@ on:
       - .github/workflows/platform_test.yaml
       - apps/platform/**
 
-
-
 permissions:
   contents: read
 
@@ -53,8 +51,8 @@ jobs:
       # Step: Setup Elixir + Erlang image as the base.
       - uses: erlef/setup-beam@v1
         with:
-          elixir-version: 1.16.2-otp-26
-          otp-version: 26.2.3
+          elixir-version: 1.17.0-otp-26
+          otp-version: 26.2.5
 
       # Step: Check out the code.
       - uses: actions/checkout@v3
