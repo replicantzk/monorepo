@@ -53,5 +53,6 @@ jobs:
         with:
           path: apps/platform/doc
 
-      - name: Deploy to GitHub Pages 
+      - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
