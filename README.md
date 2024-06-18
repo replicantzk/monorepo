@@ -4,11 +4,13 @@
 
 *Own your intelligence.*
 
-The Replicant Network is a decentralized AI inference network. You can download the desktop app to earn credits for serving requests routed to you from our OpenAI-compatible API. Credits are used to make requests to the API for inference. Join the [Discord](https://discord.gg/yvWPVCS7NH) server and read the [TLDR](https://replicantzk.com/about/tldr) and [quickstart](https://replicantzk.com/docs/quickstart/api) guides on our [site](https://replicantzk.com) to learn more.
+The Replicant Network is a decentralized AI inference network. You can download the desktop app to earn credits for serving requests routed to you from our OpenAI-compatible API. Credits are used to make requests to the API for inference. 
+
+Join the [Discord](https://discord.gg/yvWPVCS7NH) server and read the [TLDR](https://replicantzk.com/about/tldr) and [quickstart](https://replicantzk.com/docs/quickstart/api) guides on our [site](https://replicantzk.com) to learn more.
 
 ## Components
 
-Components marked `(experimental)` are being researched to address issues such as worker spoofing and provide assurances for response integrity.
+Components marked `(experimental)` are being researched to provide neutral economic incentives for coordination, as an alternative to operator enforcement. They are not required to operate the network and it is possible that the approaches are not currently viable.
 
 ```bash
 .
@@ -31,7 +33,7 @@ Components marked `(experimental)` are being researched to address issues such a
 
 ### Tools
 
-These are all the tools that need to be installed individually:
+These are all the individually installed tools used to develop the project:
 
 - [docker](https://docs.docker.com/engine/install)
 - [docker compose](https://docs.docker.com/compose/install)
@@ -42,7 +44,7 @@ These are all the tools that need to be installed individually:
 - [k6](https://k6.io/docs/get-started/installation/)
 - [direnv](https://direnv.net)
 
-Depending on the component you are working on, you may only need a subset.
+Depending on the component you are working on, you may only need a subset of these.
 
 ### Setup
 
