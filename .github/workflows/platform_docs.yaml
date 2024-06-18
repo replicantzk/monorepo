@@ -49,10 +49,9 @@ jobs:
         run: mix docs
   
       - name: Upload docs
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v3
         with:
           path: apps/platform/doc
 
-      - name: Deploy to GitHub Pages
-        id: deployment
+      - name: Deploy to GitHub Pages 
         uses: actions/deploy-pages@v4
