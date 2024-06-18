@@ -35,7 +35,7 @@ jobs:
         uses: actions/cache@v3
         id: mix-cache
         with:
-          path: deps
+          path: app/platform/deps
           key: ${{ runner.os }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-mix-${{ hashFiles('**/mix.lock') }}
 
       - name: Install Mix Dependencies
