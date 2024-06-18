@@ -8,8 +8,5 @@ else
 fi
 
 git checkout main
-git push origin main
-git checkout release
-git merge origin/main
 git tag "$TAG" --force
-git push origin "$TAG" --force
+git push upstream "$TAG" --force
