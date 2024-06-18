@@ -1,14 +1,10 @@
-ARG DEBIAN_VERSION=bullseye-20240311-slim
+ARG DEBIAN_VERSION=bullseye-20240612-slim
 ARG RUNNER_IMAGE="debian:${DEBIAN_VERSION}"
-ARG OTP_VERSION=25.2.3
-ARG ELIXIR_VERSION=1.16.2
-# ARG NODE_VERSION=18
-
-# FROM hexpm/elixir:1.16.2-erlang-25.2.3-debian-bullseye-20240311-slim as base
+ARG OTP_VERSION=26.2.5
+ARG ELIXIR_VERSION=1.17.0
 
 FROM hexpm/elixir:${ELIXIR_VERSION}-erlang-${OTP_VERSION}-debian-${DEBIAN_VERSION} as base
 
-# ENV NODE_VERSION=${NODE_VERSION}
 ENV NODE_VERSION=18
 
 RUN apt-get update -y && apt-get install -y \
