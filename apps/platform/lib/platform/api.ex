@@ -4,6 +4,7 @@ defmodule Platform.API do
   """
   import Ecto.Query, warn: false
   alias Platform.Accounts
+  alias Platform.Accounts.User
   alias Platform.API.Request
   alias Platform.API.Token
   alias Platform.API.Transaction
@@ -246,7 +247,7 @@ defmodule Platform.API do
     Transaction.changeset(transaction, attrs)
   end
 
-  def get_credits_balance(user_id) do
+  def get_credits_balance(user_id) when is_integer(user_id) do
     debits =
       Repo.one(
         from t in Transaction,
@@ -262,6 +263,13 @@ defmodule Platform.API do
       ) || 0
 
     debits - credits
+  end
+
+  def get_credits_balance(email) when is_binary(email) do
+    case Accounts.get_user_by_email(email) do
+      %User{} = user -> get_credits_balance(user.id)
+      nil -> {:error, :not_found}
+    end
   end
 
   def get_transactions(user_id, opts \\ []) do
@@ -292,18 +300,6 @@ defmodule Platform.API do
     end
   end
 
-  def transfer_credits(amount, user_to_id) do
-    {:ok, user_from} = get_system_credit_account()
-
-    transaction_attrs = %{
-      from: user_from.id,
-      to: user_to_id,
-      amount: amount
-    }
-
-    create_transaction(transaction_attrs)
-  end
-
   def transfer_credits(amount, user_to_id, user_from_id) do
     transaction_attrs = %{
       from: user_from_id,
@@ -318,32 +314,60 @@ defmodule Platform.API do
     end
   end
 
-  def credits_mint(email, amount) do
-    case Accounts.get_user_by_email(@system_email) do
-      {:ok, user} -> transfer_credits(amount, user.id)
-      {:error, reason} -> {:error, reason}
-    end
-  end
+  def credits_mint(user_id, amount) when is_integer(user_id) do
+    case get_system_credit_account() do
+      {:ok, system_user} ->
+        transaction_attrs = %{
+          from: system_user.id,
+          to: user_id,
+          amount: amount
+        }
 
-  def credits_smite(email) do
-    with {:ok, system_user} <- get_system_credit_account(),
-         {:ok, user} <- Accounts.get_user_by_email(@system_email) do
-      balance = get_credits_balance(user.id)
-      transfer_credits(balance, user.id, system_user.id)
-    else
+        create_transaction(transaction_attrs)
+
       {:error, reason} ->
         {:error, reason}
     end
   end
 
-  def credits_smite(email, amount) do
-    with {:ok, system_user} <- get_system_credit_account(),
-         {:ok, user} <- Accounts.get_user_by_email(@system_email) do
-      balance = get_credits_balance(user.id)
-      transfer_credits(min(amount, balance), user.id, system_user.id)
-    else
+  def credits_mint(email, amount) when is_binary(email) do
+    case Accounts.get_user_by_email(email) do
+      %User{} = user -> credits_mint(user.id, amount)
+      nil -> {:error, :not_found}
+    end
+  end
+
+  def credits_burn(email) when is_binary(email) do
+    case Accounts.get_user_by_email(email) do
+      %User{} = user ->
+        balance = get_credits_balance(user.id)
+        credits_burn(user.id, balance)
+
+      nil ->
+        {:error, :not_found}
+    end
+  end
+
+  def credits_burn(user_id, amount) when is_integer(user_id) do
+    case get_system_credit_account() do
+      {:ok, system_user} ->
+        transaction_attrs = %{
+          from: user_id,
+          to: system_user.id,
+          amount: amount
+        }
+
+        create_transaction(transaction_attrs)
+
       {:error, reason} ->
         {:error, reason}
+    end
+  end
+
+  def credits_burn(email, amount) when is_binary(email) do
+    case Accounts.get_user_by_email(email) do
+      %User{} = user -> credits_burn(user.id, amount)
+      nil -> {:error, :not_found}
     end
   end
 end
