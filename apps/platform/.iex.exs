@@ -9,5 +9,5 @@ alias Platform.Accounts
 alias Platform.AMQPPublisher
 alias Platform.API
 alias Platform.Model
-alias Platform.WorkerBalancer
-alias Platform.WorkerBalancerCluster
+alias Platform.Balancer
+alias Platform.BalancerCluster

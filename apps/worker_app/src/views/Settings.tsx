@@ -88,7 +88,7 @@ export default function Settings() {
       <form className="form-control w-full max-w-lg">
         <div className="flex items-center mb-4">
           <label className="label flex-none w-1/4" htmlFor="workerAPIKey">
-            <span>Worker ID</span>
+            <span>Client ID</span>
           </label>
           <input
             type="text"
@@ -113,7 +113,7 @@ export default function Settings() {
         </div>
         <div className="flex items-center mb-4">
           <label className="label flex-none w-1/4" htmlFor="workerAPIKey">
-            <span>Worker Salt</span>
+            <span>Salt</span>
           </label>
           <input
             type="text"

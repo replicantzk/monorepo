@@ -1,7 +1,7 @@
 defmodule Platform.AMQPConsumer do
   use GenServer
   use AMQP
-  alias Platform.WorkerBalancer
+  alias Platform.Balancer
   alias PlatformWeb.Endpoint
 
   @amqp_channel :req_chann
@@ -46,7 +46,7 @@ defmodule Platform.AMQPConsumer do
          %{routing_key: model, delivery_tag: delivery_tag, redelivered: _redelivered}},
         chan
       ) do
-    with {:ok, worker_id} <- WorkerBalancer.get_worker(model),
+    with {:ok, worker_id} <- Balancer.get_worker(model),
          {:ok, request} <- Jason.decode(payload),
          {:ok, request_id} <- Map.fetch(request, "id"),
          {:ok, params} <- Map.fetch(request, "params"),

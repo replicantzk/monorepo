@@ -18,7 +18,12 @@
       <.link href={~p"/"}>
         <img src={~p"/images/logo.png"} alt="logo" class="h-16" />
       </.link>
-      <ul class="relative z-10 flex items-center gap-4">
+      <ul class="relative z-10 flex items-center gap-4">\
+        <%= if @current_user do %>
+          <li class="text-[0.8125rem] leading-6 text-zinc-900">
+            <%= @current_user.email %>
+          </li>
+        <% end %>
         <li>
           <.link href={~p"/workers"} class="btn btn-primary">
             Workers

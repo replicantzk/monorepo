@@ -1,8 +1,8 @@
 defmodule PlatformWeb.WorkersLive do
   use PlatformWeb, :live_view
   alias Platform.Model
-  alias Platform.WorkerBalancer
-  alias Platform.WorkerBalancerCluster
+  alias Platform.Balancer
+  alias Platform.BalancerCluster
 
   @impl true
   def render(assigns) do
@@ -39,18 +39,18 @@ defmodule PlatformWeb.WorkersLive do
   @impl true
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      Phoenix.PubSub.subscribe(Platform.PubSub, WorkerBalancer.pubsub_topic())
+      Phoenix.PubSub.subscribe(Platform.PubSub, Balancer.pubsub_topic())
       :net_kernel.monitor_nodes(true)
     end
 
     workers_ets =
-      WorkerBalancer.table_name()
+      Balancer.table_name()
       |> :ets.tab2list()
       |> Enum.map(fn {id, model, status} ->
         {id, model, status, Node.self()}
       end)
 
-    workers_cluster_ets = :ets.tab2list(WorkerBalancerCluster.table_name())
+    workers_cluster_ets = :ets.tab2list(BalancerCluster.table_name())
     workers_combined_ets = workers_ets ++ workers_cluster_ets
 
     workers =

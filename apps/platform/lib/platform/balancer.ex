@@ -1,8 +1,8 @@
-defmodule Platform.WorkerBalancer do
+defmodule Platform.Balancer do
   use GenServer
   import Ex2ms
   alias Phoenix.PubSub
-  alias Platform.WorkerBalancerCluster
+  alias Platform.BalancerCluster
 
   @table_name :balancer
 
@@ -56,7 +56,7 @@ defmodule Platform.WorkerBalancer do
         end
 
       [] ->
-        WorkerBalancerCluster.get_worker(model)
+        BalancerCluster.get_worker(model)
     end
   end
 

@@ -1,8 +1,8 @@
-defmodule Platform.WorkerBalancerCluster do
+defmodule Platform.BalancerCluster do
   use GenServer
   import Ex2ms
   alias Phoenix.PubSub
-  alias Platform.WorkerBalancer
+  alias Platform.Balancer
 
   @table_name :balancer_cluster
 
@@ -24,7 +24,7 @@ defmodule Platform.WorkerBalancerCluster do
       [_ | _] = workers ->
         {id, ^model, :free, node} = Enum.random(workers)
 
-        case :rpc.call(node, WorkerBalancer, :lock, [id]) do
+        case :rpc.call(node, Balancer, :lock, [id]) do
           true -> {:ok, id}
           _ -> {:error, :lock_failed}
         end
@@ -50,7 +50,7 @@ defmodule Platform.WorkerBalancerCluster do
       ]
     )
 
-    PubSub.subscribe(Platform.PubSub, WorkerBalancer.pubsub_topic())
+    PubSub.subscribe(Platform.PubSub, Balancer.pubsub_topic())
     :net_kernel.monitor_nodes(true)
 
     {:ok, %{}}

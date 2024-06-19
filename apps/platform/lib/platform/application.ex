@@ -21,8 +21,8 @@ defmodule Platform.Application do
         {Platform.AMQPConsumerSupervisor, []},
         {PartitionSupervisor,
          child_spec: Platform.AMQPPublisher, name: Platform.PartitionSupervisorAMQPPublisher},
-        {Platform.WorkerBalancerCluster, []},
-        {Platform.WorkerBalancer, []}
+        {Platform.BalancerCluster, []},
+        {Platform.Balancer, []}
       ] ++ cache_specs()
 
     opts = [strategy: :one_for_one, name: Platform.Supervisor]
