@@ -6,6 +6,8 @@ defmodule PlatformWeb.InferenceChannel do
   alias Platform.ConnectionLimiter
   alias Platform.WorkerBalancer
 
+  intercept ["disconnect"]
+
   @impl true
   def join(
         "inference:" <> worker_id,
@@ -25,9 +27,6 @@ defmodule PlatformWeb.InferenceChannel do
     else
       {:error, reason} when is_atom(reason) ->
         {:error, %{reason: Atom.to_string(reason)}}
-
-      _ ->
-        {:error, %{reason: "server error"}}
     end
   end
 
@@ -111,9 +110,9 @@ defmodule PlatformWeb.InferenceChannel do
         %{"id" => request_id, "error" => reason},
         socket
       ) do
-    broadcast_response(request_id, {:error, reason})
     worker_id = get_worker_id(socket)
-    WorkerBalancer.free(worker_id)
+    broadcast_response(request_id, {:error, reason, worker_id})
+    # WorkerBalancer.free(worker_id)
 
     {:noreply, socket}
   end
@@ -124,6 +123,7 @@ defmodule PlatformWeb.InferenceChannel do
         _payload,
         socket
       ) do
+    worker_id = get_worker_id(socket)
     WorkerBalancer.leave(worker_id)
 
     {:stop, :shutdown, socket}

@@ -6,6 +6,13 @@ defmodule PlatformWeb.CompletionController do
   alias Platform.API.ParamsCompletion
   alias Platform.API.Request
   alias Platform.Model
+  alias PlatformWeb.Endpoint
+
+  # worker_id vs worker_user_id is confusing
+  # one is the name of the channel
+  # other is the name of the user entry in the db
+  # check if that is not reason for no disconnect
+  # otherwise review docs for channels
 
   def new(conn, params) do
     request_attrs =
@@ -100,8 +107,8 @@ defmodule PlatformWeb.CompletionController do
     conn
   end
 
-  defp error(conn, request_attrs, reason, worker_id) do
-    handle_error(request_attrs, reason, worker_id)
+  defp error(conn, request_attrs, reason) do
+    handle_error(request_attrs, reason)
 
     conn
     |> put_status(500)
@@ -109,7 +116,7 @@ defmodule PlatformWeb.CompletionController do
   end
 
   def error_chunk(conn, request_attrs, reason) do
-    handle_error(request_attrs, reason, worker_id)
+    handle_error(request_attrs, reason)
 
     Plug.Conn.chunk(conn, format_error(reason))
 
@@ -125,10 +132,16 @@ defmodule PlatformWeb.CompletionController do
     |> render("error.json", changeset: changeset)
   end
 
-  defp handle_error(request_attrs, reason, worker_id) do
+  defp handle_error(request_attrs, reason) do
     Task.start(fn ->
-      worker_topic = "inference:" <> worker_id
-      PlatformWeb.Endpoint.broadcast(worker_topic, "disconnect", %{})
+      IO.inspect(request_attrs, label: "HANDLE_ERROR")
+      worker_id = Map.get(request_attrs, :worker_id)
+
+      if worker_id do
+        worker_topic = "inference:" <> worker_id
+        IO.inspect(request_attrs, label: "HANDLE_ERROR")
+        Endpoint.broadcast(worker_topic, "disconnect", %{})
+      end
 
       request_attrs
       |> Map.put(:status, "500")

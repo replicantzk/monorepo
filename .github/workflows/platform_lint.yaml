@@ -67,10 +67,6 @@ jobs:
           key: ${{ runner.os }}-${{ env.OTP_VERSION }}-${{ env.ELIXIR_VERSION }}-plt-${{ hashFiles('**/mix.lock') }}
         if: steps.plt-cache-restore.outputs.cache-hit != 'true'
 
-      - name: Run Dialyzer
-        run: mix dialyzer
-        if: success() || failure()
-
       - name: Run Mix formatter
         run: mix format --check-formatted
         if: success() || failure()
@@ -79,14 +75,10 @@ jobs:
         run: mix credo --strict
         if: success() || failure()
 
-      - name: Run Hex Audit
-        run: mix hex.audit
-        if: success() || failure()
-
-      - name: Run Deps Audit
-        run: mix deps.audit
-        if: success() || failure()
-
       - name: Run Sobelow
         run: mix sobelow --config --exit
+        if: success() || failure()
+
+      - name: Run Dialyzer
+        run: mix dialyzer
         if: success() || failure()

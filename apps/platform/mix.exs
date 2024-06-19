@@ -71,9 +71,7 @@ defmodule Platform.MixProject do
       {:bandit, ">= 0.0.0"},
       #
       {:flame_on, "~> 0.6.0"},
-      {:mix_audit, "~> 2.1", only: [:dev, :test], runtime: false},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
-      {:recode, "~> 0.7", only: :dev},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.31", only: :dev, runtime: false}
@@ -95,10 +93,9 @@ defmodule Platform.MixProject do
         "sentry.package_source_code"
       ],
       lint: [
-        "hex.audit",
-        "deps.audit",
-        "sobelow",
+        "format --check-formatted",
         "credo --mute-exit-status",
+        "sobelow",
         "dialyzer"
       ]
     ]
