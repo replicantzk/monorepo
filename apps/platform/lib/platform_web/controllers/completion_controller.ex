@@ -1,5 +1,6 @@
 defmodule PlatformWeb.CompletionController do
   use PlatformWeb, :controller
+  alias Ecto.Changeset
   alias Platform.AMQPPublisher
   alias Platform.API
   alias Platform.API.ParamsCompletion
@@ -16,12 +17,12 @@ defmodule PlatformWeb.CompletionController do
         time_start: DateTime.utc_now()
       }
 
-    with %Ecto.Changeset{valid?: true} <- Request.changeset(%Request{}, request_attrs),
-         %Ecto.Changeset{valid?: true} <- ParamsCompletion.changeset(%ParamsCompletion{}, params),
+    with %Changeset{valid?: true} <- Request.changeset(%Request{}, request_attrs),
+         %Changeset{valid?: true} <- ParamsCompletion.changeset(%ParamsCompletion{}, params),
          :ok <- AMQPPublisher.publish(request_attrs) do
       handle_request(conn, request_attrs)
     else
-      %Ecto.Changeset{valid?: false} = changeset ->
+      %Changeset{valid?: false} = changeset ->
         error_changeset(conn, changeset)
 
       {:error, reason} ->
@@ -99,8 +100,8 @@ defmodule PlatformWeb.CompletionController do
     conn
   end
 
-  defp error(conn, request_attrs, reason) do
-    handle_error(request_attrs, reason)
+  defp error(conn, request_attrs, reason, worker_id) do
+    handle_error(request_attrs, reason, worker_id)
 
     conn
     |> put_status(500)
@@ -108,22 +109,27 @@ defmodule PlatformWeb.CompletionController do
   end
 
   def error_chunk(conn, request_attrs, reason) do
-    handle_error(request_attrs, reason)
+    handle_error(request_attrs, reason, worker_id)
 
     Plug.Conn.chunk(conn, format_error(reason))
 
     conn
   end
 
-  defp error_changeset(conn, changeset) do
+  defp error_changeset(conn, %Changeset{params: params, errors: errors} = changeset) do
+    handle_error(params, errors)
+
     conn
     |> put_status(500)
     |> put_view(json: PlatformWeb.ChangesetJSON)
     |> render("error.json", changeset: changeset)
   end
 
-  defp handle_error(request_attrs, reason) do
+  defp handle_error(request_attrs, reason, worker_id) do
     Task.start(fn ->
+      worker_topic = "inference:" <> worker_id
+      PlatformWeb.Endpoint.broadcast(worker_topic, "disconnect", %{})
+
       request_attrs
       |> Map.put(:status, "500")
       |> Map.put(:time_end, DateTime.utc_now())
@@ -134,13 +140,9 @@ defmodule PlatformWeb.CompletionController do
 
   defp handle_success(request_attrs) do
     Task.start(fn ->
+      model = request_attrs.params["model"]
       n_tokens = Model.count_tokens(request_attrs.response)
-
-      reward =
-        Model.calculate_reward(
-          get_in(request_attrs, [:params, "model"]),
-          n_tokens
-        )
+      reward = Model.calculate_reward(model, n_tokens)
 
       request_attrs =
         request_attrs
@@ -155,20 +157,19 @@ defmodule PlatformWeb.CompletionController do
       request_attrs =
         if requester_id != worker_id do
           {:ok, transaction} = API.transfer_credits(reward, requester_id, worker_id)
-          requester_topic = "transactions:#{requester_id}"
-          worker_topic = "transactions:#{worker_id}"
 
-          Phoenix.PubSub.broadcast(
-            Platform.PubSub,
-            requester_topic,
-            {:transaction, transaction}
-          )
+          topics = [
+            "transactions:#{requester_id}",
+            "transactions:#{worker_id}"
+          ]
 
-          Phoenix.PubSub.broadcast(
-            Platform.PubSub,
-            worker_topic,
-            {:transaction, transaction}
-          )
+          Enum.each(topics, fn topic ->
+            Phoenix.PubSub.broadcast(
+              Platform.PubSub,
+              topic,
+              {:transaction, transaction}
+            )
+          end)
 
           Map.put(request_attrs, :transaction_id, transaction.id)
         else
@@ -250,11 +251,9 @@ defmodule PlatformWeb.CompletionController do
     end)
   end
 
-  defp format_error_prefix(), do: "ERROR: "
+  defp error_prefix(), do: "ERROR: "
 
-  defp format_error(reason) when is_atom(reason),
-    do: format_error_prefix() <> Atom.to_string(reason)
-
-  defp format_error(reason) when is_binary(reason), do: format_error_prefix() <> reason
-  defp format_error(reason), do: format_error_prefix() <> inspect(reason)
+  defp format_error(reason) when is_atom(reason), do: error_prefix() <> Atom.to_string(reason)
+  defp format_error(reason) when is_binary(reason), do: error_prefix() <> reason
+  defp format_error(reason), do: error_prefix() <> inspect(reason)
 end

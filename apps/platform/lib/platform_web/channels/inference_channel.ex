@@ -119,6 +119,17 @@ defmodule PlatformWeb.InferenceChannel do
   end
 
   @impl true
+  def handle_out(
+        "disconnect",
+        _payload,
+        socket
+      ) do
+    WorkerBalancer.leave(worker_id)
+
+    {:stop, :shutdown, socket}
+  end
+
+  @impl true
   def terminate(reason, socket) do
     worker_id = get_worker_id(socket)
     Logger.info("Terminating channel for worker: #{worker_id} due to #{inspect(reason)}")
