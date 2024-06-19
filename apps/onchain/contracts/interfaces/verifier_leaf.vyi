@@ -1,3 +1,0 @@
-interface VerifierLeaf:
-    def getVerificationKeyHash() -> bytes32: view
-    def verify(_proof: Bytes[1024], _publicInputs: DynArray[bytes32, 1024]) -> bool: view

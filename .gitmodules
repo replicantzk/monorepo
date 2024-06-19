@@ -1,6 +1,3 @@
 [submodule "vendor/chat"]
 	path = vendor/chat
 	url = git@hf.co:spaces/replicantzk/chat
-[submodule "vendor/protokit"]
-	path = vendor/protokit
-	url = git@github.com:replicantzk/protokit.git
