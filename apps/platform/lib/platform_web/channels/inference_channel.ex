@@ -4,7 +4,7 @@ defmodule PlatformWeb.InferenceChannel do
   alias Phoenix.PubSub
   alias Platform.API
   alias Platform.ConnectionLimiter
-  alias Platform.WorkerBalancer
+  alias Platform.Balancer
 
   intercept ["disconnect"]
 
@@ -19,7 +19,7 @@ defmodule PlatformWeb.InferenceChannel do
     ip = RemoteIp.from(socket.assigns.x_headers)
 
     with {:ok, user} <- authorized?(ip, worker_id, payload),
-         true <- WorkerBalancer.join(worker_id, model) do
+         true <- Balancer.join(worker_id, model) do
       {:ok,
        socket
        |> assign(worker_id: worker_id)
@@ -50,7 +50,7 @@ defmodule PlatformWeb.InferenceChannel do
   end
 
   def leave(worker_id) do
-    WorkerBalancer.leave(worker_id)
+    Balancer.leave(worker_id)
     {:shutdown, :left}
   end
 
@@ -63,7 +63,7 @@ defmodule PlatformWeb.InferenceChannel do
     worker_user_id = socket.assigns.user.id
     broadcast_response(request_id, {:result, worker_user_id, result})
     worker_id = get_worker_id(socket)
-    WorkerBalancer.free(worker_id)
+    Balancer.free(worker_id)
 
     {:noreply, socket}
   end
@@ -99,7 +99,7 @@ defmodule PlatformWeb.InferenceChannel do
       ) do
     broadcast_response(request_id, :chunk_end)
     worker_id = get_worker_id(socket)
-    WorkerBalancer.free(worker_id)
+    Balancer.free(worker_id)
 
     {:noreply, socket}
   end
@@ -112,7 +112,7 @@ defmodule PlatformWeb.InferenceChannel do
       ) do
     worker_id = get_worker_id(socket)
     broadcast_response(request_id, {:error, reason, worker_id})
-    # WorkerBalancer.free(worker_id)
+    # Balancer.free(worker_id)
 
     {:noreply, socket}
   end
@@ -124,7 +124,7 @@ defmodule PlatformWeb.InferenceChannel do
         socket
       ) do
     worker_id = get_worker_id(socket)
-    WorkerBalancer.leave(worker_id)
+    Balancer.leave(worker_id)
 
     {:stop, :shutdown, socket}
   end
@@ -133,7 +133,7 @@ defmodule PlatformWeb.InferenceChannel do
   def terminate(reason, socket) do
     worker_id = get_worker_id(socket)
     Logger.info("Terminating channel for worker: #{worker_id} due to #{inspect(reason)}")
-    WorkerBalancer.leave(worker_id)
+    Balancer.leave(worker_id)
 
     :ok
   end

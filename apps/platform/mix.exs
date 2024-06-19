@@ -70,7 +70,7 @@ defmodule Platform.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, ">= 0.0.0"},
       #
-      {:flame_on, "~> 0.7.0"},
+      {:flame_on, "~> 0.6.0"},
       {:sobelow, "~> 0.13", only: [:dev, :test], runtime: false},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
