@@ -30,11 +30,11 @@ user2_attrs = %{
 if is_nil(Accounts.get_user_by_email(user1_attrs.email)) do
   {:ok, user1} = Accounts.register_user(user1_attrs)
   Accounts.assign_user_token(user1, token1)
-  API.transfer_credits(1_000_000, user1.id)
+  API.credits_mint(1_000_000, user1.id)
 end
 
 if is_nil(Accounts.get_user_by_email(user2_attrs.email)) do
   {:ok, user2} = Accounts.register_user(user2_attrs)
   Accounts.assign_user_token(user2, token2)
-  API.transfer_credits(100_000, user2.id)
+  API.credits_mint(100_000, user2.id)
 end

@@ -8,12 +8,6 @@ defmodule PlatformWeb.CompletionController do
   alias Platform.Model
   alias PlatformWeb.Endpoint
 
-  # worker_id vs worker_user_id is confusing
-  # one is the name of the channel
-  # other is the name of the user entry in the db
-  # check if that is not reason for no disconnect
-  # otherwise review docs for channels
-
   def new(conn, params) do
     request_attrs =
       %{
@@ -30,7 +24,7 @@ defmodule PlatformWeb.CompletionController do
       handle_request(conn, request_attrs)
     else
       %Changeset{valid?: false} = changeset ->
-        error_changeset(conn, changeset)
+        error_changeset(conn, request_attrs, changeset)
 
       {:error, reason} ->
         error(conn, request_attrs, reason)
@@ -41,13 +35,21 @@ defmodule PlatformWeb.CompletionController do
     Phoenix.PubSub.subscribe(Platform.PubSub, "requests:" <> request_attrs.id)
 
     receive do
-      {:result, worker_id, result} ->
-        request_attrs = Map.put(request_attrs, :worker_id, worker_id)
-        request_attrs = Map.put(request_attrs, :response, extract_text_result(result))
+      {:result, result, worker_id, client_id} ->
+        request_attrs =
+          request_attrs
+          |> Map.put(:status, "200")
+          |> Map.put(:worker_id, worker_id)
+          |> Map.put(:client_id, client_id)
+          |> Map.put(:response, extract_text_result(result))
+
         success(conn, request_attrs, result)
 
-      {:chunk_start, worker_id} ->
-        request_attrs = Map.put(request_attrs, :worker_id, worker_id)
+      {:chunk_start, worker_id, client_id} ->
+        request_attrs =
+          request_attrs
+          |> Map.put(:worker_id, worker_id)
+          |> Map.put(:client_id, client_id)
 
         conn
         |> put_resp_header("connection", "keep-alive")
@@ -56,8 +58,12 @@ defmodule PlatformWeb.CompletionController do
         |> Plug.Conn.send_chunked(200)
         |> sse(request_attrs)
 
-      {:error, worker_id, reason} ->
-        request_attrs = Map.put(request_attrs, :worker_id, worker_id)
+      {:error, reason, worker_id, client_id} ->
+        request_attrs =
+          request_attrs
+          |> Map.put(:worker_id, worker_id)
+          |> Map.put(:client_id, client_id)
+
         error(conn, request_attrs, reason)
     after
       Application.fetch_env!(:platform, :request_timeout) ->
@@ -80,9 +86,10 @@ defmodule PlatformWeb.CompletionController do
 
       :chunk_end ->
         request_attrs = Map.put(request_attrs, :response, text_acc)
+
         success_chunk(conn, request_attrs)
 
-      {:error, reason} ->
+      {:chunk_error, reason} ->
         error_chunk(conn, request_attrs, reason)
 
       _unknown ->
@@ -123,8 +130,8 @@ defmodule PlatformWeb.CompletionController do
     conn
   end
 
-  defp error_changeset(conn, %Changeset{params: params, errors: errors} = changeset) do
-    handle_error(params, errors)
+  defp error_changeset(conn, request_attrs, %Changeset{errors: errors} = changeset) do
+    handle_error(request_attrs, errors)
 
     conn
     |> put_status(500)
@@ -134,13 +141,10 @@ defmodule PlatformWeb.CompletionController do
 
   defp handle_error(request_attrs, reason) do
     Task.start(fn ->
-      IO.inspect(request_attrs, label: "HANDLE_ERROR")
-      worker_id = Map.get(request_attrs, :worker_id)
+      client_id = Map.get(request_attrs, :client_id)
 
-      if worker_id do
-        worker_topic = "inference:" <> worker_id
-        IO.inspect(request_attrs, label: "HANDLE_ERROR")
-        Endpoint.broadcast(worker_topic, "disconnect", %{})
+      if client_id do
+        Endpoint.broadcast("inference:" <> client_id, "disconnect", %{})
       end
 
       request_attrs
@@ -153,9 +157,10 @@ defmodule PlatformWeb.CompletionController do
 
   defp handle_success(request_attrs) do
     Task.start(fn ->
-      model = request_attrs.params["model"]
+      requester_id = request_attrs.requester_id
+      worker_id = request_attrs.worker_id
       n_tokens = Model.count_tokens(request_attrs.response)
-      reward = Model.calculate_reward(model, n_tokens)
+      reward = Model.calculate_reward(request_attrs.params["model"], n_tokens)
 
       request_attrs =
         request_attrs
@@ -164,13 +169,10 @@ defmodule PlatformWeb.CompletionController do
         |> Map.put(:reward, reward)
         |> Map.put(:time_end, DateTime.utc_now())
 
-      worker_id = request_attrs.worker_id
-      requester_id = request_attrs.requester_id
-
       request_attrs =
-        if requester_id != worker_id do
-          {:ok, transaction} = API.transfer_credits(reward, requester_id, worker_id)
-
+        with true <- requester_id != worker_id,
+             {:ok, transaction} <-
+               API.transfer_credits(reward, requester_id, worker_id) do
           topics = [
             "transactions:#{requester_id}",
             "transactions:#{worker_id}"
@@ -183,39 +185,15 @@ defmodule PlatformWeb.CompletionController do
               {:transaction, transaction}
             )
           end)
-
-          Map.put(request_attrs, :transaction_id, transaction.id)
         else
-          request_attrs
+          _ -> request_attrs
         end
 
       API.create_request(request_attrs)
     end)
   end
 
-  # %{
-  #   "choices" => [
-  #     %{
-  #       "finish_reason" => "stop",
-  #       "index" => 0,
-  #       "message" => %{
-  #         "content" => "Operation Barbarossa was a military campaign launched by Emperor Adolf Hitler in 1945 to conquer the Western Front of World War II. The campaign involved several major battles, including the Battle of Stalingrad and the Battle of Balaclava.\n\nOperation Barbarossa was a significant turning point in World War II, marking the end of the war and the beginning of a new era of global conflict.\n",
-  #         "role" => "assistant"
-  #       }
-  #     }
-  #   ],
-  #   "created" => 1715115371,
-  #   "id" => "chatcmpl-454",
-  #   "model" => "qwen:0.5b-chat-v1.5-q4_K_M",
-  #   "object" => "chat.completion",
-  #   "system_fingerprint" => "fp_ollama",
-  #   "usage" => %{
-  #     "completion_tokens" => 84,
-  #     "prompt_tokens" => 0,
-  #     "total_tokens" => 84
-  #   }
-  # }
-
+  # https://pastebin.com/N3AnXqa5
   defp extract_text_result(result) do
     try do
       result
@@ -227,9 +205,8 @@ defmodule PlatformWeb.CompletionController do
     end
   end
 
-  # "data: {\"id\":\"chatcmpl-668\",\"object\":\"chat.completion.chunk\",\"created\":1715114855,\"model\":\"qwen:0.5b-chat-v1.5-q4_K_M\",\"system_fingerprint\":\"fp_ollama\",\"choices\":[{\"index\":0,\"delta\":{\"role\":\"assistant\",\"content\":\" of\"},\"finish_reason\":null}]}\n\n"
-
-  def extract_text_chunk(chunk) do
+  # https://pastebin.com/z2sJxrMV
+  defp extract_text_chunk(chunk) do
     chunk
     |> String.trim()
     |> String.split("data: ")
@@ -266,7 +243,6 @@ defmodule PlatformWeb.CompletionController do
 
   defp error_prefix(), do: "ERROR: "
 
-  defp format_error(reason) when is_atom(reason), do: error_prefix() <> Atom.to_string(reason)
   defp format_error(reason) when is_binary(reason), do: error_prefix() <> reason
   defp format_error(reason), do: error_prefix() <> inspect(reason)
 end

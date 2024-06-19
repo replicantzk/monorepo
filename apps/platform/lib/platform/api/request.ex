@@ -15,6 +15,7 @@ defmodule Platform.API.Request do
     field :reward, :integer
     field :time_start, :utc_datetime
     field :time_end, :utc_datetime
+    field :client_id, :string
 
     belongs_to :requester, User, foreign_key: :requester_id
     belongs_to :worker, User, foreign_key: :worker_id

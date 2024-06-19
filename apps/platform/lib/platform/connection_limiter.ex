@@ -1,5 +1,5 @@
 defmodule Platform.ConnectionLimiter do
-  def cache_name(), do: :connection_limiter
+  def cache_name, do: :connection_limiter
 
   def check(key) do
     reset_ms = Application.fetch_env!(:platform, :conn_limit_reset)
@@ -17,14 +17,14 @@ defmodule Platform.ConnectionLimiter do
     cond do
       time_diff_ms > reset_ms ->
         Cachex.put(:connection_limiter, key, {0, time_now})
-        true
+        :ok
 
       count < limit_per_second ->
         Cachex.put(:connection_limiter, key, {count + 1, time_now})
-        true
+        :ok
 
       true ->
-        false
+        {:error, :rate_limit}
     end
   end
 end
