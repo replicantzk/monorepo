@@ -1,8 +1,8 @@
 import { UInt64 } from "o1js";
-import { Balances } from "./runtime/balance";
-import { Stake } from "./runtime/stake";
-import { Challenges } from "./runtime/challenge";
 import { Inference } from "./runtime/attest";
+import { Balances } from "./runtime/balance";
+import { Challenges } from "./runtime/challenge";
+import { Stake } from "./runtime/stake";
 
 export default {
   modules: {
@@ -20,7 +20,7 @@ export default {
     Inference: {
       claimReward: UInt64.from(1),
       challengeReward: UInt64.from(1),
-      challengePeriod: UInt64.from((4 * 60 * 60) / 5), // 4 hours with 5 seconds blocks
+      challengePeriod: UInt64.from((4 * 60 * 60) / 5),
     },
   },
 };

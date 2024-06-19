@@ -1,5 +1,6 @@
 # MIT License
 
+Copyright (c) 2022 wslyvh
 Copyright (c) 2024 Marko Vukovic
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
