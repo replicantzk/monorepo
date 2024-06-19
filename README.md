@@ -10,13 +10,9 @@ Join the [Discord](https://discord.gg/yvWPVCS7NH) server and read the [TLDR](htt
 
 ## Components
 
-Components marked `(experimental)` are being researched to provide neutral economic incentives for coordination, as an alternative to operator enforcement. They are not required to operate the network and it is possible that the approaches are not currently viable.
-
 ```bash
 .
-├── apps
-│   ├── appchain # (experimental) Mina/Protokit ZK appchain
-│   ├── onchain # (experimental) EVM contracts and Noir circuits
+├── apps # App components
 │   ├── platform # Main service
 │   ├── site # Website and documentation
 │   ├── worker_app # Worker desktop application
@@ -40,7 +36,6 @@ These are all the individually installed tools used to develop the project:
 - [mise](https://mise.jdx.dev/getting-started.html)
 - [asdf elixir](https://github.com/asdf-vm/asdf-elixir)
 - [poetry](https://python-poetry.org/docs/#installing-with-pipx)
-- [solc](https://docs.soliditylang.org/en/latest/installing-solidity.html#installing-the-solidity-compiler)
 - [k6](https://k6.io/docs/get-started/installation/)
 - [direnv](https://direnv.net)
 
